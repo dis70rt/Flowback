@@ -1,0 +1,116 @@
+# ----------------------------------------------------------------------
+# Environment & Secrets
+# ----------------------------------------------------------------------
+.env
+.env.local
+.env.*
+!.env.example
+*.pem
+*.key
+*.cert
+*.crt
+credentials.json
+client_secret.json
+
+# ----------------------------------------------------------------------
+# Go (apps/backend)
+# ----------------------------------------------------------------------
+# Binaries and compiled objects
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Dependency directories
+vendor/
+
+# Typical application binaries
+/apps/backend/api
+/apps/backend/worker
+/apps/backend/bin/
+bin/
+
+# ----------------------------------------------------------------------
+# Python (apps/recovery-agent)
+# ----------------------------------------------------------------------
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environments
+venv/
+env/
+.venv/
+.env/
+pip-wheel-metadata/
+
+# Testing, Static Analysis, and Coverage
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.pytype/
+htmlcov/
+
+# Jupyter
+.ipynb_checkpoints
+
+# ----------------------------------------------------------------------
+# Data, Databases & Logs
+# ----------------------------------------------------------------------
+# Ignore data folder contents (like Postgres Docker volumes) but keep the dir
+/data/*
+!/data/.keep
+!/data/README.md
+
+*.sqlite
+*.sqlite3
+*.db
+*.db3
+*.s3db
+*.sl3
+
+*.log
+
+# ----------------------------------------------------------------------
+# OS & Editors
+# ----------------------------------------------------------------------
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.Spotlight-V100
+.Trashes
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Thumbs.db:encrypt
+
+# Editors & IDEs
+.idea/
+*.swp
+*.swo
+*~
+
+# VS Code - Ignore local workspace settings but keep shared configs
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
