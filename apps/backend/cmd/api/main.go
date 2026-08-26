@@ -7,6 +7,7 @@ import (
 
 	"github.com/dis70rt/flowback/internal/config"
 	"github.com/dis70rt/flowback/internal/database"
+	"github.com/dis70rt/flowback/internal/events"
 	"github.com/dis70rt/flowback/internal/razorpay"
 )
 
@@ -19,9 +20,13 @@ func main() {
 	}
 	defer db.Close()
 
+	asynqClient := database.InitAsynqClient(cfg.RedisAddr)
+	defer asynqClient.Close()
+	enqueuer := events.NewEnqueuer(asynqClient)
+
 	r := gin.Default()
 
-	rzpHandler := razorpay.NewWebhookHandler(cfg.RazorpaySecret)
+	rzpHandler := razorpay.NewWebhookHandler(cfg.RazorpaySecret, enqueuer)
 
 	r.POST("/webhooks/razorpay", rzpHandler.Handle)
 
