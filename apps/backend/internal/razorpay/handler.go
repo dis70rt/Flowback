@@ -6,23 +6,20 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-
-	"github.com/dis70rt/flowback/internal/events"
 )
 
 type TaskEnqueuer interface {
-	EnqueuePaymentFailed(payload events.PaymentFailedPayload) error
-	EnqueueSubscriptionHalted(payload events.SubscriptionHaltedPayload) error
+	EnqueueWebhook(event string, rawJSON []byte) error
 }
 
 type WebhookHandler struct {
-	Secret    string
+	Secret   string
 	Enqueuer TaskEnqueuer
 }
 
 func NewWebhookHandler(secret string, enqueuer TaskEnqueuer) *WebhookHandler {
 	return &WebhookHandler{
-		Secret:    secret,
+		Secret:   secret,
 		Enqueuer: enqueuer,
 	}
 }
@@ -43,8 +40,7 @@ func (h *WebhookHandler) Handle(c *gin.Context) {
 	}
 
 	var payload struct {
-		Event   string                 `json:"event"`
-		Payload map[string]interface{} `json:"payload"`
+		Event string `json:"event"`
 	}
 
 	if err := json.Unmarshal(body, &payload); err != nil {
@@ -54,39 +50,10 @@ func (h *WebhookHandler) Handle(c *gin.Context) {
 
 	log.Printf("SUCCESS: SECURE EVENT RECEIVED: %s\n", payload.Event)
 
-	// Route events cleanly using our Enqueuer abstraction
-	switch payload.Event {
-	case "payment.failed":
-		var paymentId, errCode, errDesc, customerId string
-		if paymentData, ok := payload.Payload["payment"].(map[string]interface{}); ok {
-			if entity, ok := paymentData["entity"].(map[string]interface{}); ok {
-				paymentId, _ = entity["id"].(string)
-				errCode, _ = entity["error_code"].(string)
-				errDesc, _ = entity["error_description"].(string)
-				customerId, _ = entity["customer_id"].(string)
-			}
-		}
-
-		_ = h.Enqueuer.EnqueuePaymentFailed(events.PaymentFailedPayload{
-			PaymentID:  paymentId,
-			ErrorCode:  errCode,
-			ErrorDesc:  errDesc,
-			CustomerID: customerId,
-		})
-
-	case "subscription.halted":
-		var subId, customerId string
-		if subData, ok := payload.Payload["subscription"].(map[string]interface{}); ok {
-			if entity, ok := subData["entity"].(map[string]interface{}); ok {
-				subId, _ = entity["id"].(string)
-				customerId, _ = entity["customer_id"].(string)
-			}
-		}
-
-		_ = h.Enqueuer.EnqueueSubscriptionHalted(events.SubscriptionHaltedPayload{
-			SubscriptionID: subId,
-			CustomerID:     customerId,
-		})
+	if err := h.Enqueuer.EnqueueWebhook(payload.Event, body); err != nil {
+		log.Printf("ERROR: Failed to enqueue webhook: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to enqueue"})
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
