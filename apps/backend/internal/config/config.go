@@ -10,6 +10,7 @@ import (
 type Config struct {
 	RazorpaySecret string
 	DatabaseURL    string
+	RedisAddr      string
 }
 
 func Load() *Config {
@@ -28,8 +29,14 @@ func Load() *Config {
 		dbUrl = "postgres://flowback:postgres@localhost:5432/flowback?sslmode=disable"
 	}
 
+	redisAddr := os.Getenv("REDIS_ADDR")
+	if redisAddr == "" {
+		redisAddr = "localhost:6379"
+	}
+
 	return &Config{
 		RazorpaySecret: secret,
 		DatabaseURL:    dbUrl,
+		RedisAddr:      redisAddr,
 	}
 }
