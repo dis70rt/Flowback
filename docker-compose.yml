@@ -1,0 +1,54 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: flowback_postgres
+    env_file:
+      - .env
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - flowback_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U flowback"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+
+
+  redis:
+    image: redis:7-alpine
+    container_name: flowback_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - flowback_network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: flowback_tunnel
+    restart: unless-stopped
+    # Mount your local cloudflared config so it can authenticate your named tunnel
+    volumes:
+      - ~/.cloudflared:/home/nonroot/.cloudflared
+    # Point to host.docker.internal to reach the Go API running natively on your laptop
+    command: tunnel run --url http://host.docker.internal:8080 flowback-tunnel
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+volumes:
+  pgdata:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  flowback_network:
+    driver: bridge
