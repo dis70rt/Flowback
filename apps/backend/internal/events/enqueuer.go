@@ -3,6 +3,7 @@ package events
 import (
 	"encoding/json"
 	"log"
+	"time"
 
 	"github.com/hibiken/asynq"
 )
@@ -26,7 +27,13 @@ func (e *Enqueuer) EnqueueWebhook(event string, rawJSON []byte) error {
 		return err
 	}
 
-	task := asynq.NewTask(TopicWebhookReceived, payloadBytes, asynq.MaxRetry(5))
+	task := asynq.NewTask(
+		TopicWebhookReceived,
+		payloadBytes,
+		asynq.MaxRetry(5),
+		asynq.Timeout(30*time.Second),       // Each attempt must finish within 30s
+		asynq.Retention(24*time.Hour),       // Keep completed tasks for 24h for debugging
+	)
 	
 	info, err := e.client.Enqueue(task)
 	if err != nil {
