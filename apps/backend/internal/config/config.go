@@ -11,6 +11,7 @@ type Config struct {
 	RazorpaySecret string
 	DatabaseURL    string
 	RedisAddr      string
+	RedisURL       string
 }
 
 func Load() *Config {
@@ -34,9 +35,12 @@ func Load() *Config {
 		redisAddr = "localhost:6379"
 	}
 
+	redisURL := "redis://" + redisAddr + "/0"
+
 	return &Config{
 		RazorpaySecret: secret,
 		DatabaseURL:    dbUrl,
 		RedisAddr:      redisAddr,
+		RedisURL:       redisURL,
 	}
 }
