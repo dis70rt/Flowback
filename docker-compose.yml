@@ -35,11 +35,13 @@ services:
     image: cloudflare/cloudflared:latest
     container_name: flowback_tunnel
     restart: unless-stopped
-    # Mount your local cloudflared config so it can authenticate your named tunnel
-    volumes:
-      - ~/.cloudflared:/home/nonroot/.cloudflared
-    # Point to host.docker.internal to reach the Go API running natively on your laptop
-    command: tunnel run --url http://host.docker.internal:8080 flowback-tunnel
+    command: tunnel --no-autoupdate run
+    env_file:
+      - .env
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+    
+    # DEVELOPMENT ONLY: Required for Docker to reach your laptop's localhost
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
