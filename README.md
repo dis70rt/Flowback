@@ -18,13 +18,16 @@ Flowback is an audit microservice that ingests Razorpay webhooks, classifies pay
 1. Copy `.env.example` to `.env` in the root directory and configure your variables.
 2. Configure your Cloudflare Tunnel:
    * Go to the Cloudflare Zero Trust Dashboard -> Networks -> Tunnels.
-   * Create a new tunnel (select Cloudflared).
-   * Copy the generated token (the long string starting with `ey...`).
+   * Create a new tunnel (select Cloudflared) and copy the generated token.
    * Add this token to your `.env` file:
      ```env
      CLOUDFLARE_TUNNEL_TOKEN=your_token_here
      ```
-   * In the Cloudflare Dashboard, configure a Public Hostname for the tunnel and route it to `http://host.docker.internal:8080`.
+   * In the tunnel configuration, click the **Published application routes** tab (do not use Hostname routes).
+   * Click **Add a published application route**.
+   * Set your desired Subdomain and select your Domain. Leave Path empty.
+   * Under Service, set Type to `HTTP` and URL to exactly `host.docker.internal:8080`.
+   * Save the route. *(Note: If you receive a "DNS record already exists" error, either choose a different subdomain or delete the conflicting record from your main Cloudflare DNS settings).*
 3. Start the infrastructure:
    ```bash
    docker compose up -d
