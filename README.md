@@ -67,3 +67,15 @@ You can trigger a real webhook flow by using the provided seeder. The seeder cal
    go run cmd/seeder/main.go -task=card
    ```
 4. Check the Worker terminal. Once Razorpay sends the webhook to your API, the worker will consume the task, classify the decline type (e.g., Soft decline for insufficient funds), and broadcast the decision to the PubSub channel.
+
+
+## Database & Code Generation
+This project uses `sqlc` to generate type-safe database models directly from the SQL migrations. We do not use a manual repository folder or an ORM like GORM.
+
+If you modify the SQL migrations in `migrations/`, or add new queries to `queries/tools.sql`, you must regenerate the Go code by running:
+```bash
+# From the apps/backend directory
+/home/dis70rt/go/bin/sqlc generate
+```
+This will instantly update the structs in `internal/database/db`.
+

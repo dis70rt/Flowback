@@ -8,10 +8,12 @@ import (
 )
 
 type Config struct {
-	RazorpaySecret string
-	DatabaseURL    string
-	RedisAddr      string
-	RedisURL       string
+	RazorpaySecret   string
+	DatabaseURL      string
+	RedisAddr        string
+	RedisURL         string
+	OpenRouterAPIKey string
+	OpenRouterModel  string
 }
 
 func Load() *Config {
@@ -37,10 +39,21 @@ func Load() *Config {
 
 	redisURL := "redis://" + redisAddr + "/0"
 
+	openRouterAPIKey := os.Getenv("OPENROUTER_API_KEY")
+	if openRouterAPIKey == "" {
+		log.Println("WARNING: OPENROUTER_API_KEY is not set in .env")
+	}
+	openRouterModel := os.Getenv("OPENROUTER_MODEL")
+	if openRouterModel == "" {
+		openRouterModel = "z-ai/glm-5.3-flash"
+	}
+
 	return &Config{
-		RazorpaySecret: secret,
-		DatabaseURL:    dbUrl,
-		RedisAddr:      redisAddr,
-		RedisURL:       redisURL,
+		RazorpaySecret:   secret,
+		DatabaseURL:      dbUrl,
+		RedisAddr:        redisAddr,
+		RedisURL:         redisURL,
+		OpenRouterAPIKey: openRouterAPIKey,
+		OpenRouterModel:  openRouterModel,
 	}
 }
