@@ -15,16 +15,18 @@ import (
 
 // FailedCardTask creates an order and fails a Card payment
 type FailedCardTask struct {
+	CustomerID  string
+	Email       string
 	AmountPaise int
 	CardNumber  string
 }
 
 func (t *FailedCardTask) Name() string {
-	return fmt.Sprintf("Failed Card Payment (Card: %s)", t.CardNumber)
+	return fmt.Sprintf("Failed Card Payment (Customer: %s, Card: %s)", t.CustomerID, t.CardNumber)
 }
 
 func (t *FailedCardTask) Execute(client *razorpay.Client, keyID string) {
-	log.Printf("Starting Task: Failed Card Payment (Card: %s, Amount: %d paise)\n", t.CardNumber, t.AmountPaise)
+	log.Printf("Starting Task: Failed Card Payment (Customer: %s, Amount: %d paise)\n", t.CustomerID, t.AmountPaise)
 
 	// 1. Create Order
 	data := map[string]interface{}{
@@ -32,6 +34,8 @@ func (t *FailedCardTask) Execute(client *razorpay.Client, keyID string) {
 		"currency": "INR",
 		"receipt":  fmt.Sprintf("sim_card_%d", time.Now().Unix()),
 	}
+	// Note: We don't strictly need to pass customer_id to the Order for this simulation, 
+	// but we MUST pass it to the payment API so Razorpay includes it in the webhook!
 
 	order, err := client.Order.Create(data, nil)
 	if err != nil {
@@ -53,7 +57,7 @@ func (t *FailedCardTask) Execute(client *razorpay.Client, keyID string) {
 	formData.Set("card[expiry_year]", TestCardExpiryYear)
 	formData.Set("card[cvv]", TestCardCVV)
 	formData.Set("contact", "9999999999")
-	formData.Set("email", "test@flowback.ai")
+	formData.Set("email", t.Email)
 
 	executeAJAXPayment(formData)
 }
