@@ -69,6 +69,31 @@ htmlcov/
 .ipynb_checkpoints
 
 # ----------------------------------------------------------------------
+# React / Node.js (apps/frontend)
+# ----------------------------------------------------------------------
+# dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# testing
+coverage/
+
+# production
+build/
+dist/
+
+# next.js
+.next/
+out/
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ----------------------------------------------------------------------
 # Data, Databases & Logs
 # ----------------------------------------------------------------------
 # Ignore data folder contents (like Postgres Docker volumes) but keep the dir
