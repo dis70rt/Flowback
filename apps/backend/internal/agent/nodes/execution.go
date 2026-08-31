@@ -52,9 +52,13 @@ func NewExecutionNode(queries *repo.Queries, bus pubsub.Publisher) *workflow.Fun
 			amountVal, _ := ctx.State().Get("amount")
 			amount, _ := amountVal.(int64)
 
-			// DB Operation 1: Create Recovery Case
+			// Pull our shiny new guaranteed Internal DB UUID from the whiteboard
+			internalUUIDVal, _ := ctx.State().Get("internal_customer_uuid")
+			internalUUID, _ := internalUUIDVal.(uuid.NullUUID)
+
+			// DB Operation 1: Create Recovery Case linked to the REAL human!
 			caseID, err := queries.CreateRecoveryCase(ctx, repo.CreateRecoveryCaseParams{
-				CustomerID:        uuid.NullUUID{}, 
+				CustomerID:        internalUUID, 
 				SubscriptionID:    subscriptionID,
 				PaymentID:         sql.NullString{String: paymentID, Valid: true},
 				AmountAtRisk:      amount,
@@ -83,7 +87,7 @@ func NewExecutionNode(queries *repo.Queries, bus pubsub.Publisher) *workflow.Fun
 			payload := map[string]any{
 				"event":       "draft_ready",
 				"case_id":     caseID.String(),
-				"customer_id": customerID,
+				"customer_id": customerID, // Using string for UI fallback
 				"channel":     channel,
 				"status":      "PENDING_APPROVAL",
 			}

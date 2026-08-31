@@ -19,6 +19,7 @@ type Querier interface {
 	GetActionsByCase(ctx context.Context, recoveryCaseID uuid.UUID) ([]GetActionsByCaseRow, error)
 	GetActiveCaseBySubscription(ctx context.Context, subscriptionID string) (GetActiveCaseBySubscriptionRow, error)
 	GetCommunicationHistory(ctx context.Context, razorpayCustomerID sql.NullString) ([]GetCommunicationHistoryRow, error)
+	GetCustomerByEmailOrPhone(ctx context.Context, arg GetCustomerByEmailOrPhoneParams) (uuid.UUID, error)
 	GetCustomerProfile(ctx context.Context, razorpayCustomerID sql.NullString) (GetCustomerProfileRow, error)
 	GetPendingActions(ctx context.Context) ([]GetPendingActionsRow, error)
 	GetRecoveryCaseByID(ctx context.Context, id uuid.UUID) (RecoveryCase, error)

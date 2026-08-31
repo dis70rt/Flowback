@@ -3,7 +3,9 @@ package main
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"log"
+	"strings"
 
 	"github.com/hibiken/asynq"
 	_ "github.com/lib/pq"
@@ -12,6 +14,8 @@ import (
 	"github.com/dis70rt/flowback/internal/agent/core"
 	"github.com/dis70rt/flowback/internal/agent/nodes"
 	"github.com/dis70rt/flowback/internal/config"
+	"github.com/dis70rt/flowback/internal/events"
+	"github.com/dis70rt/flowback/internal/pubsub"
 	"github.com/dis70rt/flowback/internal/repo"
 	"google.golang.org/adk/v2/agent"
 	"google.golang.org/adk/v2/runner"
@@ -48,7 +52,8 @@ func main() {
 		log.Fatalf("failed to init copywriter agent: %v", err)
 	}
 
-	orchestrator, err := flowagent.BuildOrchestrator(ctx, queries, strategyAgent, copywriterAgent)
+	bus, _ := pubsub.New(cfg.RedisURL)
+	orchestrator, err := flowagent.BuildOrchestrator(ctx, queries, strategyAgent, copywriterAgent, bus)
 	if err != nil {
 		log.Fatalf("failed to build orchestrator: %v", err)
 	}
@@ -58,8 +63,19 @@ func main() {
 		log.Fatalf("failed to create runner: %v", err)
 	}
 
+	var redisConnOpt asynq.RedisConnOpt
+	if strings.HasPrefix(cfg.RedisURL, "redis://") || strings.HasPrefix(cfg.RedisURL, "rediss://") {
+		opt, err := asynq.ParseRedisURI(cfg.RedisURL)
+		if err != nil {
+			log.Fatalf("failed to parse redis url: %v", err)
+		}
+		redisConnOpt = opt
+	} else {
+		redisConnOpt = asynq.RedisClientOpt{Addr: cfg.RedisAddr}
+	}
+
 	srv := asynq.NewServer(
-		asynq.RedisClientOpt{Addr: cfg.RedisAddr},
+		redisConnOpt,
 		asynq.Config{
 			Concurrency: 10,
 			Queues: map[string]int{
@@ -73,13 +89,19 @@ func main() {
 	mux := asynq.NewServeMux()
 	
 	mux.HandleFunc(TypeProcessWebhook, func(c context.Context, t *asynq.Task) error {
-		payload := string(t.Payload())
-		log.Printf("[WORKER] Started processing webhook task. Payload size: %d bytes", len(payload))
+		var wp events.WebhookPayload
+		if err := json.Unmarshal(t.Payload(), &wp); err != nil {
+			log.Printf("[WORKER] Failed to parse task payload: %v", err)
+			return err
+		}
+		
+		log.Printf("[WORKER] Started processing webhook task. Event: %s", wp.Event)
 		
 		userID := "system"
 		sessionID := t.ResultWriter().TaskID() 
 		
-		inputContent := genai.Text(payload)[0]
+		// Extract the true Razorpay JSON to feed to the ADK graph
+		inputContent := genai.Text(string(wp.RawJSON))[0]
 
 		iter := r.Run(c, userID, sessionID, inputContent, agent.RunConfig{})
 		
@@ -97,7 +119,7 @@ func main() {
 		return nil
 	})
 
-	log.Printf("Worker booting up. Listening on Redis: %s", cfg.RedisAddr)
+	log.Printf("Worker booting up. Listening on Redis: %s", cfg.RedisURL)
 	if err := srv.Run(mux); err != nil {
 		log.Fatalf("could not run worker server: %v", err)
 	}

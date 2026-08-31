@@ -24,3 +24,9 @@ INSERT INTO customers (
 ON CONFLICT (razorpay_customer_id) DO UPDATE 
 SET email = EXCLUDED.email, phone = EXCLUDED.phone, name = EXCLUDED.name, updated_at = NOW()
 RETURNING id;
+
+-- name: GetCustomerByEmailOrPhone :one
+SELECT id
+FROM customers
+WHERE (email = $1 AND email != '') OR (phone = $2 AND phone != '')
+LIMIT 1;

@@ -27,7 +27,7 @@ func BuildOrchestrator(
 	bus pubsub.Publisher,
 ) (agent.Agent, error) {
 
-	ingestNode := nodes.NewIngestNode()
+	ingestNode := nodes.NewIngestNode(queries)
 	executionNode := nodes.NewExecutionNode(queries, bus)
 
 	nodeStrategy, err := workflow.NewAgentNode(strategyAgent, workflow.NodeConfig{})

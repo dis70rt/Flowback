@@ -12,6 +12,25 @@ import (
 	"github.com/google/uuid"
 )
 
+const getCustomerByEmailOrPhone = `-- name: GetCustomerByEmailOrPhone :one
+SELECT id
+FROM customers
+WHERE (email = $1 AND email != '') OR (phone = $2 AND phone != '')
+LIMIT 1
+`
+
+type GetCustomerByEmailOrPhoneParams struct {
+	Email sql.NullString `json:"email"`
+	Phone sql.NullString `json:"phone"`
+}
+
+func (q *Queries) GetCustomerByEmailOrPhone(ctx context.Context, arg GetCustomerByEmailOrPhoneParams) (uuid.UUID, error) {
+	row := q.db.QueryRowContext(ctx, getCustomerByEmailOrPhone, arg.Email, arg.Phone)
+	var id uuid.UUID
+	err := row.Scan(&id)
+	return id, err
+}
+
 const getCustomerProfile = `-- name: GetCustomerProfile :one
 SELECT 
     id, razorpay_customer_id, name, value_tier, tenure, 
