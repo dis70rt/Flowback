@@ -102,6 +102,65 @@ func (q *Queries) GetRecoveryCaseByID(ctx context.Context, id uuid.UUID) (Recove
 	return i, err
 }
 
+const listRecoveryCases = `-- name: ListRecoveryCases :many
+SELECT id, customer_id, subscription_id, payment_id, razorpay_error_code, razorpay_error_desc, decline_category, ai_diagnosis, ai_confidence, status, retry_count, max_retries, contact_count, max_contacts, amount_at_risk, currency, amount_recovered, first_failed_at, recovery_deadline, recovered_at, next_retry_at, created_at, updated_at, ai_strategy FROM recovery_cases
+ORDER BY created_at DESC
+LIMIT $1 OFFSET $2
+`
+
+type ListRecoveryCasesParams struct {
+	Limit  int32 `json:"limit"`
+	Offset int32 `json:"offset"`
+}
+
+func (q *Queries) ListRecoveryCases(ctx context.Context, arg ListRecoveryCasesParams) ([]RecoveryCase, error) {
+	rows, err := q.db.QueryContext(ctx, listRecoveryCases, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []RecoveryCase
+	for rows.Next() {
+		var i RecoveryCase
+		if err := rows.Scan(
+			&i.ID,
+			&i.CustomerID,
+			&i.SubscriptionID,
+			&i.PaymentID,
+			&i.RazorpayErrorCode,
+			&i.RazorpayErrorDesc,
+			&i.DeclineCategory,
+			&i.AiDiagnosis,
+			&i.AiConfidence,
+			&i.Status,
+			&i.RetryCount,
+			&i.MaxRetries,
+			&i.ContactCount,
+			&i.MaxContacts,
+			&i.AmountAtRisk,
+			&i.Currency,
+			&i.AmountRecovered,
+			&i.FirstFailedAt,
+			&i.RecoveryDeadline,
+			&i.RecoveredAt,
+			&i.NextRetryAt,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.AiStrategy,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateCaseDiagnosis = `-- name: UpdateCaseDiagnosis :exec
 UPDATE recovery_cases
 SET ai_diagnosis = $2, ai_confidence = $3, decline_category = $4, status = 'DIAGNOSING', updated_at = NOW()

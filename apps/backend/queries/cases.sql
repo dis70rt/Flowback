@@ -39,3 +39,8 @@ WHERE id = $1;
 UPDATE recovery_cases
 SET status = 'RECOVERED', amount_recovered = $2, recovered_at = NOW(), updated_at = NOW()
 WHERE id = $1;
+
+-- name: ListRecoveryCases :many
+SELECT * FROM recovery_cases
+ORDER BY created_at DESC
+LIMIT $1 OFFSET $2;

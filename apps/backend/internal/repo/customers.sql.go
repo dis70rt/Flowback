@@ -31,6 +31,35 @@ func (q *Queries) GetCustomerByEmailOrPhone(ctx context.Context, arg GetCustomer
 	return id, err
 }
 
+const getCustomerByID = `-- name: GetCustomerByID :one
+SELECT id, razorpay_customer_id, email, phone, name, value_tier, tenure, preferred_channel, total_payments, successful_payments, failed_payments, created_at, updated_at, city, state, reliability_score FROM customers
+WHERE id = $1 LIMIT 1
+`
+
+func (q *Queries) GetCustomerByID(ctx context.Context, id uuid.UUID) (Customer, error) {
+	row := q.db.QueryRowContext(ctx, getCustomerByID, id)
+	var i Customer
+	err := row.Scan(
+		&i.ID,
+		&i.RazorpayCustomerID,
+		&i.Email,
+		&i.Phone,
+		&i.Name,
+		&i.ValueTier,
+		&i.Tenure,
+		&i.PreferredChannel,
+		&i.TotalPayments,
+		&i.SuccessfulPayments,
+		&i.FailedPayments,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.City,
+		&i.State,
+		&i.ReliabilityScore,
+	)
+	return i, err
+}
+
 const getCustomerProfile = `-- name: GetCustomerProfile :one
 SELECT 
     id, razorpay_customer_id, name, value_tier, tenure, 

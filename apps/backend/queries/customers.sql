@@ -30,3 +30,7 @@ SELECT id
 FROM customers
 WHERE (email = $1 AND email != '') OR (phone = $2 AND phone != '')
 LIMIT 1;
+
+-- name: GetCustomerByID :one
+SELECT * FROM customers
+WHERE id = $1 LIMIT 1;

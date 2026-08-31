@@ -235,3 +235,19 @@ func (q *Queries) UpdateActionAsynqTask(ctx context.Context, arg UpdateActionAsy
 	_, err := q.db.ExecContext(ctx, updateActionAsynqTask, arg.ID, arg.AsynqTaskID)
 	return err
 }
+
+const updateActionDraft = `-- name: UpdateActionDraft :exec
+UPDATE recovery_actions
+SET draft_body = $2
+WHERE id = $1
+`
+
+type UpdateActionDraftParams struct {
+	ID        uuid.UUID      `json:"id"`
+	DraftBody sql.NullString `json:"draft_body"`
+}
+
+func (q *Queries) UpdateActionDraft(ctx context.Context, arg UpdateActionDraftParams) error {
+	_, err := q.db.ExecContext(ctx, updateActionDraft, arg.ID, arg.DraftBody)
+	return err
+}

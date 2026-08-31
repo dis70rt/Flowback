@@ -41,3 +41,8 @@ WHERE id = $1;
 UPDATE recovery_actions
 SET asynq_task_id = $2
 WHERE id = $1;
+
+-- name: UpdateActionDraft :exec
+UPDATE recovery_actions
+SET draft_body = $2
+WHERE id = $1;
