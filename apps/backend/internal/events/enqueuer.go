@@ -31,7 +31,7 @@ func (e *Enqueuer) EnqueueWebhook(event string, rawJSON []byte) error {
 		TopicWebhookReceived,
 		payloadBytes,
 		asynq.MaxRetry(5),
-		asynq.Timeout(30*time.Second),       // Each attempt must finish within 30s
+		asynq.Timeout(5 * time.Minute),       // Each attempt must finish within 5mins``
 		asynq.Retention(24*time.Hour),       // Keep completed tasks for 24h for debugging
 	)
 	
