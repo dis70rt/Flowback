@@ -1,0 +1,512 @@
+openapi: 3.0.3
+info:
+  title: Flowback API
+  version: 1.0.0
+  description: >
+    API documentation for the Flowback backend services. The backend is built in Go (Gin + SQLC).
+    Note that nullable database fields return nested objects (e.g., sql.NullString becomes `{"String": "value", "Valid": true}`).
+servers:
+  - url: /api
+    description: Base API path
+paths:
+  /stream:
+    get:
+      summary: Real-time SSE Stream
+      description: Server-Sent Events stream for real-time updates across the platform.
+      responses:
+        '200':
+          description: SSE stream connected
+          content:
+            text/event-stream:
+              schema:
+                type: string
+  /metrics:
+    get:
+      summary: Get system metrics
+      description: Returns top-level aggregated metrics for the dashboard.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total_revenue_recovered:
+                    type: number
+                  active_cases:
+                    type: integer
+                  ai_success_rate:
+                    type: number
+  /cases:
+    get:
+      summary: List Recovery Cases
+      description: Paginated list of active recovery cases.
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListCasesResponse'
+  /cases/{id}:
+    get:
+      summary: Get Case by ID
+      description: Get detailed view of a single recovery case, including its actions history.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  case:
+                    $ref: '#/components/schemas/RecoveryCase'
+                  actions:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/RecoveryAction'
+        '400':
+          description: Invalid case UUID
+        '404':
+          description: Case not found
+  /cases/{id}/approve:
+    post:
+      summary: Approve Action Draft
+      description: "Approves a pending action draft to be executed. **Note: the ID parameter should be the Action ID, not the Case ID.**"
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: approved
+        '400':
+          description: Invalid action UUID
+  /cases/{id}/draft:
+    put:
+      summary: Edit Action Draft
+      description: "Edits the body of a pending action draft. **Note: the ID parameter should be the Action ID, not the Case ID.**"
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EditDraftRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: draft_updated
+        '400':
+          description: Invalid request payload or UUID
+  /cases/{id}/reject:
+    post:
+      summary: Reject Action Draft
+      description: "Rejects a pending action draft. **Note: the ID parameter should be the Action ID, not the Case ID.**"
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: rejected
+        '400':
+          description: Invalid action UUID
+  /customers/{id}:
+    get:
+      summary: Get Customer by ID
+      description: Retrieve details of a customer involved in a recovery case.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+        '400':
+          description: Invalid customer UUID
+        '404':
+          description: Customer not found
+  /customers/{id}/payments:
+    get:
+      summary: Get Customer Payments
+      description: Get the payment history for a customer (currently returns a placeholder).
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      type: object
+  /customers/{id}/communications:
+    get:
+      summary: Get Customer Communications
+      description: Get the communication history (emails, SMS, etc.) sent to a customer.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CommunicationHistory'
+        '400':
+          description: Invalid customer UUID
+        '404':
+          description: Customer not found
+components:
+  schemas:
+    ListCasesResponse:
+      type: object
+      properties:
+        page:
+          type: integer
+        limit:
+          type: integer
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/CaseItemDTO'
+    CaseItemDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        subscription_id:
+          type: string
+        amount_at_risk:
+          type: integer
+        status:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    EditDraftRequest:
+      type: object
+      required:
+        - draft_body
+      properties:
+        draft_body:
+          type: string
+    
+    # Standard sql.Null* Types in Go
+    NullString:
+      type: object
+      properties:
+        String:
+          type: string
+        Valid:
+          type: boolean
+    NullInt32:
+      type: object
+      properties:
+        Int32:
+          type: integer
+        Valid:
+          type: boolean
+    NullInt64:
+      type: object
+      properties:
+        Int64:
+          type: integer
+        Valid:
+          type: boolean
+    NullFloat64:
+      type: object
+      properties:
+        Float64:
+          type: number
+        Valid:
+          type: boolean
+    NullTime:
+      type: object
+      properties:
+        Time:
+          type: string
+          format: date-time
+        Valid:
+          type: boolean
+    NullUUID:
+      type: object
+      properties:
+        UUID:
+          type: string
+          format: uuid
+        Valid:
+          type: boolean
+          
+    # Custom Null Types
+    NullDeclineType:
+      type: object
+      properties:
+        decline_type:
+          type: string
+        valid:
+          type: boolean
+    NullRawMessage:
+      type: object
+      properties:
+        RawMessage:
+          type: object
+        Valid:
+          type: boolean
+          
+    RecoveryCase:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        customer_id:
+          $ref: '#/components/schemas/NullUUID'
+        subscription_id:
+          type: string
+        payment_id:
+          $ref: '#/components/schemas/NullString'
+        razorpay_error_code:
+          $ref: '#/components/schemas/NullString'
+        razorpay_error_desc:
+          $ref: '#/components/schemas/NullString'
+        decline_category:
+          $ref: '#/components/schemas/NullDeclineType'
+        ai_diagnosis:
+          $ref: '#/components/schemas/NullString'
+        ai_confidence:
+          $ref: '#/components/schemas/NullFloat64'
+        status:
+          type: string
+        retry_count:
+          type: integer
+        max_retries:
+          type: integer
+        contact_count:
+          type: integer
+        max_contacts:
+          type: integer
+        amount_at_risk:
+          type: integer
+        currency:
+          type: string
+        amount_recovered:
+          $ref: '#/components/schemas/NullInt64'
+        first_failed_at:
+          type: string
+          format: date-time
+        recovery_deadline:
+          type: string
+          format: date-time
+        recovered_at:
+          $ref: '#/components/schemas/NullTime'
+        next_retry_at:
+          $ref: '#/components/schemas/NullTime'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        ai_strategy:
+          $ref: '#/components/schemas/NullRawMessage'
+          
+    RecoveryAction:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        recovery_case_id:
+          type: string
+          format: uuid
+        idempotency_key:
+          type: string
+        action_type:
+          type: string
+        channel:
+          $ref: '#/components/schemas/NullString'
+        ai_reasoning:
+          $ref: '#/components/schemas/NullString'
+        ai_confidence:
+          $ref: '#/components/schemas/NullFloat64'
+        policy_approved:
+          type: boolean
+        policy_block_reason:
+          $ref: '#/components/schemas/NullString'
+        status:
+          type: string
+        external_id:
+          $ref: '#/components/schemas/NullString'
+        error_message:
+          $ref: '#/components/schemas/NullString'
+        payment_link_id:
+          $ref: '#/components/schemas/NullString'
+        payment_link_url:
+          $ref: '#/components/schemas/NullString'
+        payment_link_expires_at:
+          $ref: '#/components/schemas/NullTime'
+        executed_at:
+          $ref: '#/components/schemas/NullTime'
+        created_at:
+          type: string
+          format: date-time
+        discount_percentage:
+          $ref: '#/components/schemas/NullInt32'
+        draft_subject:
+          $ref: '#/components/schemas/NullString'
+        draft_body:
+          $ref: '#/components/schemas/NullString'
+        asynq_task_id:
+          $ref: '#/components/schemas/NullString'
+        approved_by_clerk_id:
+          $ref: '#/components/schemas/NullString'
+          
+    Customer:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        razorpay_customer_id:
+          $ref: '#/components/schemas/NullString'
+        email:
+          $ref: '#/components/schemas/NullString'
+        phone:
+          $ref: '#/components/schemas/NullString'
+        name:
+          $ref: '#/components/schemas/NullString'
+        value_tier:
+          $ref: '#/components/schemas/NullString'
+        tenure:
+          $ref: '#/components/schemas/NullString'
+        preferred_channel:
+          $ref: '#/components/schemas/NullString'
+        total_payments:
+          type: integer
+        successful_payments:
+          type: integer
+        failed_payments:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        city:
+          $ref: '#/components/schemas/NullString'
+        state:
+          $ref: '#/components/schemas/NullString'
+        reliability_score:
+          type: number
+          
+    CommunicationHistory:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        recovery_case_id:
+          type: string
+          format: uuid
+        customer_id:
+          type: string
+          format: uuid
+        channel:
+          type: string
+        status:
+          type: string
+        message_sid:
+          $ref: '#/components/schemas/NullString'
+        sent_at:
+          type: string
+          format: date-time
+        delivered_at:
+          $ref: '#/components/schemas/NullTime'
+        opened_at:
+          $ref: '#/components/schemas/NullTime'
+        clicked_at:
+          $ref: '#/components/schemas/NullTime'

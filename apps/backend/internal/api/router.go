@@ -1,6 +1,8 @@
 package api
 
 import (
+	_ "embed"
+
 	"github.com/gin-gonic/gin"
 
 	"github.com/dis70rt/flowback/internal/api/handlers"
@@ -9,6 +11,9 @@ import (
 	"github.com/dis70rt/flowback/internal/razorpay"
 	"github.com/dis70rt/flowback/internal/repo"
 )
+
+//go:embed swagger.yaml
+var swaggerYAML []byte
 
 type RouterDeps struct {
 	Queries        *repo.Queries
@@ -35,6 +40,36 @@ func NewRouter(deps RouterDeps) *gin.Engine {
 	// API Group
 	apiGroup := r.Group("/api")
 	{
+		// Serve OpenAPI documentation
+		apiGroup.GET("/docs/openapi.yaml", func(c *gin.Context) {
+			c.Data(200, "application/yaml", swaggerYAML)
+		})
+		apiGroup.GET("/docs", func(c *gin.Context) {
+			c.Data(200, "text/html; charset=utf-8", []byte(`
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Flowback API Docs</title>
+    <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5.11.0/swagger-ui.css" />
+</head>
+<body>
+    <div id="swagger-ui"></div>
+    <script src="https://unpkg.com/swagger-ui-dist@5.11.0/swagger-ui-bundle.js"></script>
+    <script>
+        window.onload = () => {
+            window.ui = SwaggerUIBundle({
+                url: '/api/docs/openapi.yaml',
+                dom_id: '#swagger-ui',
+            });
+        };
+    </script>
+</body>
+</html>
+			`))
+		})
+
 		// Real-time SSE Stream
 		apiGroup.GET("/stream", handlers.StreamHandler(deps.Bus))
 
