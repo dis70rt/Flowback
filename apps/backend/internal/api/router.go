@@ -20,6 +20,14 @@ type RouterDeps struct {
 func NewRouter(deps RouterDeps) *gin.Engine {
 	r := gin.Default()
 
+	// Health Check
+	r.GET("/health", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"status": "ok",
+			"service": "flowback-api",
+		})
+	})
+
 	// External Webhooks
 	rzpHandler := razorpay.NewWebhookHandler(deps.RazorpaySecret, deps.Enqueuer)
 	r.POST("/webhooks/razorpay", rzpHandler.Handle)
