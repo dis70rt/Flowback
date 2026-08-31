@@ -8,12 +8,14 @@ import (
 )
 
 type Config struct {
-	RazorpaySecret   string
-	DatabaseURL      string
-	RedisAddr        string
-	RedisURL         string
-	OpenRouterAPIKey string
-	OpenRouterModel  string
+	RazorpaySecret    string
+	RazorpayKeyID     string
+	RazorpayKeySecret string
+	DatabaseURL       string
+	RedisAddr         string
+	RedisURL          string
+	OpenRouterAPIKey  string
+	OpenRouterModel   string
 }
 
 func Load() *Config {
@@ -21,14 +23,16 @@ func Load() *Config {
 		_ = godotenv.Load(".env") // Fallback
 	}
 
-	secret := os.Getenv("RAZORPAY_WEBHOOK_SECRET")
-	if secret == "" {
-		log.Fatal("FATAL: RAZORPAY_WEBHOOK_SECRET is not set in .env")
+	webhookSecret := os.Getenv("RAZORPAY_WEBHOOK_SECRET")
+	if webhookSecret == "" {
+		log.Println("WARNING: RAZORPAY_WEBHOOK_SECRET is not set in .env")
 	}
+
+	keyID := os.Getenv("RAZORPAY_KEY_ID")
+	keySecret := os.Getenv("RAZORPAY_KEY_SECRET")
 
 	dbUrl := os.Getenv("DATABASE_URL")
 	if dbUrl == "" {
-		// Default to localhost if running outside docker
 		dbUrl = "postgres://flowback:postgres@localhost:5432/flowback?sslmode=disable"
 	}
 
@@ -49,11 +53,13 @@ func Load() *Config {
 	}
 
 	return &Config{
-		RazorpaySecret:   secret,
-		DatabaseURL:      dbUrl,
-		RedisAddr:        redisAddr,
-		RedisURL:         redisURL,
-		OpenRouterAPIKey: openRouterAPIKey,
-		OpenRouterModel:  openRouterModel,
+		RazorpaySecret:    webhookSecret,
+		RazorpayKeyID:     keyID,
+		RazorpayKeySecret: keySecret,
+		DatabaseURL:       dbUrl,
+		RedisAddr:         redisAddr,
+		RedisURL:          redisURL,
+		OpenRouterAPIKey:  openRouterAPIKey,
+		OpenRouterModel:   openRouterModel,
 	}
 }

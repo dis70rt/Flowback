@@ -13,7 +13,6 @@ import (
 	"github.com/razorpay/razorpay-go"
 )
 
-// FailedCardTask creates an order and fails a Card payment
 type FailedCardTask struct {
 	CustomerID  string
 	Email       string
@@ -28,14 +27,12 @@ func (t *FailedCardTask) Name() string {
 func (t *FailedCardTask) Execute(client *razorpay.Client, keyID string) {
 	log.Printf("Starting Task: Failed Card Payment (Customer: %s, Amount: %d paise)\n", t.CustomerID, t.AmountPaise)
 
-	// 1. Create Order
 	data := map[string]interface{}{
 		"amount":   t.AmountPaise,
 		"currency": "INR",
+		"customer_id": t.CustomerID,
 		"receipt":  fmt.Sprintf("sim_card_%d", time.Now().Unix()),
 	}
-	// Note: We don't strictly need to pass customer_id to the Order for this simulation, 
-	// but we MUST pass it to the payment API so Razorpay includes it in the webhook!
 
 	order, err := client.Order.Create(data, nil)
 	if err != nil {
@@ -45,7 +42,6 @@ func (t *FailedCardTask) Execute(client *razorpay.Client, keyID string) {
 	orderID := order["id"].(string)
 	log.Printf("Order Created: %s\n", orderID)
 
-	// 2. Fire S2S Payment API
 	formData := url.Values{}
 	formData.Set("key_id", keyID)
 	formData.Set("order_id", orderID)
@@ -78,18 +74,23 @@ func executeAJAXPayment(formData url.Values) {
 
 	body, _ := io.ReadAll(resp.Body)
 
-	// 3. Parse JSON for redirect URL
 	var res map[string]interface{}
 	if err := json.Unmarshal(body, &res); err == nil {
+		
 		if reqData, ok := res["request"].(map[string]interface{}); ok {
 			if authURL, ok := reqData["url"].(string); ok {
-				log.Printf("Action Required: Complete the OTP step at the link below:\n")
+				log.Printf("Action Required: Complete the OTP step at the link below to FAIL the payment:\n")
 				log.Printf("-> %s\n", authURL)
 				return
 			}
 		}
+
+		if redirectURL, ok := res["redirect"].(string); ok {
+			log.Printf("Action Required: Open this Razorpay Mock Bank Page in your browser and click 'Failure':\n")
+			log.Printf("-> %s\n", redirectURL)
+			return
+		}
 	}
 
-	// Fallback print
 	log.Printf("Razorpay Response: %s\n", string(body))
 }
