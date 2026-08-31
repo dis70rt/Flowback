@@ -1,18 +1,27 @@
 package razorpay
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
-type WebhookHandler struct {
-	Secret string
+type TaskEnqueuer interface {
+	EnqueueWebhook(event string, rawJSON []byte) error
 }
 
-func NewWebhookHandler(secret string) *WebhookHandler {
-	return &WebhookHandler{Secret: secret}
+type WebhookHandler struct {
+	Secret   string
+	Enqueuer TaskEnqueuer
+}
+
+func NewWebhookHandler(secret string, enqueuer TaskEnqueuer) *WebhookHandler {
+	return &WebhookHandler{
+		Secret:   secret,
+		Enqueuer: enqueuer,
+	}
 }
 
 func (h *WebhookHandler) Handle(c *gin.Context) {
@@ -30,16 +39,22 @@ func (h *WebhookHandler) Handle(c *gin.Context) {
 		return
 	}
 
-	var payload map[string]interface{}
-	if err := c.BindJSON(&payload); err != nil {
+	var payload struct {
+		Event string `json:"event"`
+	}
+
+	if err := json.Unmarshal(body, &payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON"})
 		return
 	}
 
-	event, _ := payload["event"].(string)
-	log.Printf("SUCCESS: SECURE EVENT RECEIVED: %s\n", event)
+	log.Printf("SUCCESS: SECURE EVENT RECEIVED: %s\n", payload.Event)
 
-	// TODO: Send to Kafka
+	if err := h.Enqueuer.EnqueueWebhook(payload.Event, body); err != nil {
+		log.Printf("ERROR: Failed to enqueue webhook: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to enqueue"})
+		return
+	}
 
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }

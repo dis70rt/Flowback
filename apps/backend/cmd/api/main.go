@@ -3,22 +3,44 @@ package main
 import (
 	"log"
 
-	"github.com/gin-gonic/gin"
-
+	"github.com/dis70rt/flowback/internal/api"
 	"github.com/dis70rt/flowback/internal/config"
-	"github.com/dis70rt/flowback/internal/razorpay"
+	"github.com/dis70rt/flowback/internal/database"
+	"github.com/dis70rt/flowback/internal/events"
+	"github.com/dis70rt/flowback/internal/pubsub"
+	"github.com/dis70rt/flowback/internal/repo"
 )
 
 func main() {
 	cfg := config.Load()
-	r := gin.Default()
+	
+	db, err := database.InitDB(cfg.DatabaseURL)
+	if err != nil {
+		log.Fatalf("FATAL: %v", err)
+	}
+	defer db.Close()
 
-	rzpHandler := razorpay.NewWebhookHandler(cfg.RazorpaySecret)
+	queries := repo.New(db)
 
-	r.POST("/webhooks/razorpay", rzpHandler.Handle)
+	asynqClient := database.InitAsynqClient(cfg.RedisAddr)
+	defer asynqClient.Close()
+	enqueuer := events.NewEnqueuer(asynqClient)
+
+	bus, err := pubsub.New(cfg.RedisURL)
+	if err != nil {
+		log.Fatalf("FATAL: failed to init pubsub: %v", err)
+	}
+	defer bus.Close()
+
+	router := api.NewRouter(api.RouterDeps{
+		Queries:        queries,
+		Enqueuer:       enqueuer,
+		Bus:            bus,
+		RazorpaySecret: cfg.RazorpaySecret,
+	})
 
 	log.Println("STARTING: Flowback Backend listening on port 8080...")
-	if err := r.Run(":8080"); err != nil {
+	if err := router.Run(":8080"); err != nil {
 		log.Fatal(err)
 	}
 }

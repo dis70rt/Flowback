@@ -1,0 +1,84 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: flowback_postgres
+    env_file:
+    - .env
+    ports:
+    - 5432:5432
+    volumes:
+    - pgdata:/var/lib/postgresql/data
+    networks:
+    - flowback_network
+    restart: unless-stopped
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - pg_isready -U flowback
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  redis:
+    image: redis:7-alpine
+    container_name: flowback_redis
+    ports:
+    - 6379:6379
+    volumes:
+    - redis_data:/data
+    networks:
+    - flowback_network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: flowback_tunnel
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    env_file:
+    - .env
+    environment:
+    - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+    extra_hosts:
+    - host.docker.internal:host-gateway
+  api:
+    build:
+      context: ./apps/backend
+      dockerfile: ../../infrastructure/docker/Dockerfile.api
+    container_name: flowback_api
+    restart: unless-stopped
+    ports:
+    - 8080:8080
+    env_file:
+    - .env
+    environment:
+    - DATABASE_URL=postgres://flowback:postgres@postgres:5432/flowback?sslmode=disable
+    - REDIS_ADDR=redis:6379
+    networks:
+    - flowback_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+  worker:
+    build:
+      context: ./apps/backend
+      dockerfile: ../../infrastructure/docker/Dockerfile.worker
+    container_name: flowback_worker
+    restart: unless-stopped
+    env_file:
+    - .env
+    environment:
+    - DATABASE_URL=postgres://flowback:postgres@postgres:5432/flowback?sslmode=disable
+    - REDIS_ADDR=redis:6379
+    networks:
+    - flowback_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+volumes:
+  pgdata:
+    driver: local
+  redis_data:
+    driver: local
+networks:
+  flowback_network:
+    driver: bridge
