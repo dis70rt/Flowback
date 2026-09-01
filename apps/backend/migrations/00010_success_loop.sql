@@ -4,6 +4,7 @@ ALTER TABLE recovery_actions
 ADD COLUMN human_edited BOOLEAN NOT NULL DEFAULT FALSE;
 
 -- 2. Smart Trigger: Auto-close cases on payment success
+-- +goose StatementBegin
 CREATE OR REPLACE FUNCTION process_payment_webhook()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -29,6 +30,7 @@ BEGIN
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
+-- +goose StatementEnd
 
 CREATE TRIGGER trg_process_webhook
 AFTER INSERT ON webhook_events
