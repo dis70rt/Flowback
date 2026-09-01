@@ -33,6 +33,11 @@ const formatWhatsAppText = (text: string) => {
 
   let html = escapeHtml(text);
   
+  const paymentLinkHtml = `<a href="#" class="text-[#53bdeb] underline decoration-[#53bdeb]/30 underline-offset-2 cursor-pointer break-all">https://rzp.io/i/fB9x2pL</a>`;
+
+  // Apply PAYMENT_LINK first so its HTML is not altered by markdown regex
+  html = html.replace(/\[PAYMENT_LINK\]/g, paymentLinkHtml);
+  
   html = html.replace(/```([\s\S]*?)```/g, '<code class="font-mono text-[12.5px] bg-black/15 px-1 py-0.5 rounded">$1</code>');
   html = html.replace(/\*([^*]+)\*/g, '<strong>$1</strong>');
   html = html.replace(/_([^_]+)_/g, '<em>$1</em>');
