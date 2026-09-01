@@ -82,6 +82,10 @@ func NewIngestNode(queries *repo.Queries) *workflow.FunctionNode {
 				}
 				_ = ctx.State().Set("internal_customer_uuid", internalUUID)
 
+				if internalUUID.Valid {
+					_ = queries.IncrementFailedPayment(ctx, internalUUID.UUID)
+				}
+
 				if rzpCustID == "" { rzpCustID = phone }
 				if rzpCustID == "" { rzpCustID = email }
 

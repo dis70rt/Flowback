@@ -8,6 +8,7 @@ CREATE OR REPLACE FUNCTION process_payment_webhook()
 RETURNS TRIGGER AS $$
 DECLARE
     case_id_val UUID;
+    cust_id_val UUID;
 BEGIN
     IF NEW.event_type IN ('payment_link.paid', 'payment.captured') THEN
         case_id_val := (NEW.payload #>> '{payload,payment_link,entity,notes,recovery_case_id}')::UUID;
@@ -15,7 +16,14 @@ BEGIN
         IF case_id_val IS NOT NULL THEN
             UPDATE recovery_cases 
             SET status = 'RECOVERED', recovered_at = NOW()
-            WHERE id = case_id_val;
+            WHERE id = case_id_val
+            RETURNING customer_id INTO cust_id_val;
+
+            IF cust_id_val IS NOT NULL THEN
+                UPDATE customers
+                SET successful_payments = successful_payments + 1, total_payments = total_payments + 1
+                WHERE id = cust_id_val;
+            END IF;
         END IF;
     END IF;
     RETURN NEW;
