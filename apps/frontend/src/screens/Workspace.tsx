@@ -18,6 +18,28 @@ const parseDraftBody = (bodyObj: any) => {
   }
 };
 
+const formatWhatsAppText = (text: string) => {
+  if (!text) return null;
+  const escapeHtml = (str: string) => {
+    const map: Record<string, string> = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      "'": '&#39;',
+      '"': '&quot;'
+    };
+    return str.replace(/[&<>'"]/g, (tag) => map[tag] || tag);
+  };
+
+  let html = escapeHtml(text);
+  
+  html = html.replace(/```([\s\S]*?)```/g, '<code class="font-mono text-[12.5px] bg-black/15 px-1 py-0.5 rounded">$1</code>');
+  html = html.replace(/\*([^*]+)\*/g, '<strong>$1</strong>');
+  html = html.replace(/_([^_]+)_/g, '<em>$1</em>');
+  html = html.replace(/~([^~]+)~/g, '<del>$1</del>');
+  
+  return <span dangerouslySetInnerHTML={{ __html: html }} />;
+};
 export const Workspace = () => {
   const { data: casesData, isPending: isLoadingCases } = useCases(1, 20);
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
@@ -358,7 +380,7 @@ const SelectedCaseView = ({ caseId }: { caseId: string }) => {
                           <path fill="currentColor" d="M5.188 0H0v11.193l6.467-8.625C7.526 1.156 6.958 0 5.188 0z" />
                         </svg>
                         <p className="text-[13.5px] leading-[1.45] whitespace-pre-wrap break-words">
-                          {parseDraftBody(pendingAction.draft_body)}
+                          {formatWhatsAppText(parseDraftBody(pendingAction.draft_body))}
                         </p>
                         <div className="flex items-center justify-end mt-0.5">
                           <span className="text-[#8696a0] text-[10.5px]">9:41 AM</span>
