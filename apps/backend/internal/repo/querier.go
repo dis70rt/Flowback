@@ -15,6 +15,7 @@ type Querier interface {
 	ApproveAction(ctx context.Context, arg ApproveActionParams) error
 	CreateRecoveryAction(ctx context.Context, arg CreateRecoveryActionParams) (uuid.UUID, error)
 	CreateRecoveryCase(ctx context.Context, arg CreateRecoveryCaseParams) (uuid.UUID, error)
+	GetActionAndCaseForApproval(ctx context.Context, id uuid.UUID) (GetActionAndCaseForApprovalRow, error)
 	GetActionByIdempotencyKey(ctx context.Context, idempotencyKey string) (GetActionByIdempotencyKeyRow, error)
 	GetActionsByCase(ctx context.Context, recoveryCaseID uuid.UUID) ([]GetActionsByCaseRow, error)
 	GetActiveCaseBySubscription(ctx context.Context, subscriptionID string) (GetActiveCaseBySubscriptionRow, error)

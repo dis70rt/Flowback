@@ -2,21 +2,28 @@ package handlers
 
 import (
 	"database/sql"
+	"encoding/json"
 	"net/http"
 	"strconv"
 	"time"
 	
 	"github.com/dis70rt/flowback/internal/repo"
+	"github.com/dis70rt/flowback/internal/razorpay"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/sqlc-dev/pqtype"
 )
 
 type CaseHandler struct {
-	queries *repo.Queries
+	queries        *repo.Queries
+	razorpayClient *razorpay.Client
 }
 
-func NewCaseHandler(q *repo.Queries) *CaseHandler {
-	return &CaseHandler{queries: q}
+func NewCaseHandler(q *repo.Queries, rzpClient *razorpay.Client) *CaseHandler {
+	return &CaseHandler{
+		queries:        q,
+		razorpayClient: rzpClient,
+	}
 }
 
 type CaseItemDTO struct {
@@ -36,7 +43,6 @@ type ListCasesResponse struct {
 type EditDraftRequest struct {
 	DraftBody string `json:"draft_body" binding:"required"`
 }
-
 
 func (h *CaseHandler) ListCases(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
@@ -107,11 +113,30 @@ func (h *CaseHandler) ApproveDraft(c *gin.Context) {
 		return
 	}
 
+	data, err := h.queries.GetActionAndCaseForApproval(c.Request.Context(), actionID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "action not found"})
+		return
+	}
+
+	amount := data.AmountAtRisk
+	if data.DiscountPercentage.Valid && data.DiscountPercentage.Int32 > 0 {
+		amount = amount * int64(100 - data.DiscountPercentage.Int32) / 100
+	}
+
+	linkID, linkURL, err := h.razorpayClient.CreatePaymentLink(amount, data.CaseID.String())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate payment link: " + err.Error()})
+		return
+	}
+
 	mockClerkID := sql.NullString{String: "user_clerk_admin", Valid: true}
 
 	err = h.queries.ApproveAction(c.Request.Context(), repo.ApproveActionParams{
 		ID:                actionID,
 		ApprovedByClerkID: mockClerkID,
+		PaymentLinkID:     sql.NullString{String: linkID, Valid: true},
+		PaymentLinkUrl:    sql.NullString{String: linkURL, Valid: true},
 	})
 	
 	if err != nil {
@@ -119,7 +144,7 @@ func (h *CaseHandler) ApproveDraft(c *gin.Context) {
 		return
 	}
 	
-	c.JSON(http.StatusOK, gin.H{"status": "approved"})
+	c.JSON(http.StatusOK, gin.H{"status": "approved", "payment_link_url": linkURL})
 }
 
 func (h *CaseHandler) EditDraft(c *gin.Context) {
@@ -136,8 +161,8 @@ func (h *CaseHandler) EditDraft(c *gin.Context) {
 	}
 
 	err = h.queries.UpdateActionDraft(c.Request.Context(), repo.UpdateActionDraftParams{
-		ID:        actionID,
-		DraftBody: sql.NullString{String: req.DraftBody, Valid: true},
+		ID:           actionID,
+		DraftPayload: pqtype.NullRawMessage{RawMessage: json.RawMessage(req.DraftBody), Valid: len(req.DraftBody) > 0},
 	})
 
 	if err != nil {
@@ -145,7 +170,8 @@ func (h *CaseHandler) EditDraft(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"status": "draft_updated"})
+	// Edit acts as Approve
+	h.ApproveDraft(c)
 }
 
 func (h *CaseHandler) RejectDraft(c *gin.Context) {

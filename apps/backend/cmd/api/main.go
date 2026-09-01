@@ -9,6 +9,7 @@ import (
 	"github.com/dis70rt/flowback/internal/events"
 	"github.com/dis70rt/flowback/internal/pubsub"
 	"github.com/dis70rt/flowback/internal/repo"
+	"github.com/dis70rt/flowback/internal/razorpay"
 )
 
 func main() {
@@ -32,11 +33,14 @@ func main() {
 	}
 	defer bus.Close()
 
+	rzpClient := razorpay.NewClient(cfg.RazorpayKeyID, cfg.RazorpayKeySecret)
+
 	router := api.NewRouter(api.RouterDeps{
 		Queries:        queries,
 		Enqueuer:       enqueuer,
 		Bus:            bus,
 		RazorpaySecret: cfg.RazorpaySecret,
+		RazorpayClient: rzpClient,
 	})
 
 	log.Println("STARTING: Flowback Backend listening on port 8080...")

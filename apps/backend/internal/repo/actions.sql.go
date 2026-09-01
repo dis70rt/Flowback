@@ -74,6 +74,32 @@ func (q *Queries) CreateRecoveryAction(ctx context.Context, arg CreateRecoveryAc
 	return id, err
 }
 
+const getActionAndCaseForApproval = `-- name: GetActionAndCaseForApproval :one
+SELECT a.id as action_id, a.discount_percentage, c.id as case_id, c.amount_at_risk
+FROM recovery_actions a
+JOIN recovery_cases c ON a.recovery_case_id = c.id
+WHERE a.id = $1 LIMIT 1
+`
+
+type GetActionAndCaseForApprovalRow struct {
+	ActionID           uuid.UUID     `json:"action_id"`
+	DiscountPercentage sql.NullInt32 `json:"discount_percentage"`
+	CaseID             uuid.UUID     `json:"case_id"`
+	AmountAtRisk       int64         `json:"amount_at_risk"`
+}
+
+func (q *Queries) GetActionAndCaseForApproval(ctx context.Context, id uuid.UUID) (GetActionAndCaseForApprovalRow, error) {
+	row := q.db.QueryRowContext(ctx, getActionAndCaseForApproval, id)
+	var i GetActionAndCaseForApprovalRow
+	err := row.Scan(
+		&i.ActionID,
+		&i.DiscountPercentage,
+		&i.CaseID,
+		&i.AmountAtRisk,
+	)
+	return i, err
+}
+
 const getActionByIdempotencyKey = `-- name: GetActionByIdempotencyKey :one
 SELECT id, status FROM recovery_actions WHERE idempotency_key = $1 LIMIT 1
 `

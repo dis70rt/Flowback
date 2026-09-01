@@ -20,6 +20,7 @@ type RouterDeps struct {
 	Enqueuer       *events.Enqueuer
 	Bus            pubsub.Bus
 	RazorpaySecret string
+	RazorpayClient *razorpay.Client
 }
 
 func NewRouter(deps RouterDeps) *gin.Engine {
@@ -34,7 +35,7 @@ func NewRouter(deps RouterDeps) *gin.Engine {
 	})
 
 	// External Webhooks
-	rzpHandler := razorpay.NewWebhookHandler(deps.RazorpaySecret, deps.Enqueuer)
+	rzpHandler := razorpay.NewWebhookHandler(deps.RazorpaySecret, deps.Enqueuer, deps.Queries)
 	r.POST("/webhooks/razorpay", rzpHandler.Handle)
 
 	// API Group
@@ -77,7 +78,7 @@ func NewRouter(deps RouterDeps) *gin.Engine {
 		apiGroup.GET("/metrics", handlers.MetricsHandler(deps.Queries))
 
 		// Cases
-		caseHandler := handlers.NewCaseHandler(deps.Queries)
+		caseHandler := handlers.NewCaseHandler(deps.Queries, deps.RazorpayClient)
 		apiGroup.GET("/cases", caseHandler.ListCases)
 		apiGroup.GET("/cases/:id", caseHandler.GetCase)
 		apiGroup.POST("/cases/:id/approve", caseHandler.ApproveDraft)

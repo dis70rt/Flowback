@@ -46,3 +46,9 @@ WHERE id = $1;
 UPDATE recovery_actions
 SET draft_payload = $2, human_edited = TRUE
 WHERE id = $1;
+
+-- name: GetActionAndCaseForApproval :one
+SELECT a.id as action_id, a.discount_percentage, c.id as case_id, c.amount_at_risk
+FROM recovery_actions a
+JOIN recovery_cases c ON a.recovery_case_id = c.id
+WHERE a.id = $1 LIMIT 1;
