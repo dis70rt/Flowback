@@ -23,6 +23,56 @@ type SearchNewsOutput struct {
 	Summary   string   `json:"summary"`
 }
 
+
+func FetchLocalNews(location string, query string) ([]string, string, error) {
+	apiKey := os.Getenv("NEWS_API_KEY")
+	if apiKey == "" {
+		return nil, "", fmt.Errorf("NEWS_API_KEY is not configured in the environment")
+	}
+
+	searchQuery := fmt.Sprintf("%s %s", location, query)
+	apiURL := fmt.Sprintf("https://newsapi.org/v2/everything?q=%s&sortBy=publishedAt&apiKey=%s", 
+		url.QueryEscape(searchQuery), apiKey)
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Get(apiURL)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to contact news api: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, "", fmt.Errorf("news api returned status: %d", resp.StatusCode)
+	}
+
+	var result struct {
+		Status   string `json:"status"`
+		Articles []struct {
+			Title       string `json:"title"`
+			Description string `json:"description"`
+		} `json:"articles"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, "", fmt.Errorf("failed to parse news api response: %v", err)
+	}
+
+	var headlines []string
+	for i, article := range result.Articles {
+		if i >= 3 {
+			break
+		}
+		headlines = append(headlines, article.Title)
+	}
+
+	summary := "No major disruptions found."
+	if len(headlines) > 0 {
+		summary = "Recent news articles suggest potential disruptions related to the query."
+	}
+
+	return headlines, summary, nil
+}
+
 func NewSearchLocalNewsTool() (tool.Tool, error) {
 	return functiontool.New(
 		functiontool.Config{
@@ -31,51 +81,10 @@ func NewSearchLocalNewsTool() (tool.Tool, error) {
 		},
 		func(ctx agent.Context, input SearchNewsInput) (*SearchNewsOutput, error) {
 			
-			apiKey := os.Getenv("NEWS_API_KEY")
-			if apiKey == "" {
-				return nil, fmt.Errorf("NEWS_API_KEY is not configured in the environment")
-			}
-
-			searchQuery := fmt.Sprintf("%s %s", input.Location, input.Query)
-			apiURL := fmt.Sprintf("https://newsapi.org/v2/everything?q=%s&sortBy=publishedAt&apiKey=%s", 
-				url.QueryEscape(searchQuery), apiKey)
-
-			client := &http.Client{Timeout: 10 * time.Second}
-			resp, err := client.Get(apiURL)
+			headlines, summary, err := FetchLocalNews(input.Location, input.Query)
 			if err != nil {
-				return nil, fmt.Errorf("failed to contact news api: %v", err)
+				return nil, err
 			}
-			defer resp.Body.Close()
-
-			if resp.StatusCode != http.StatusOK {
-				return nil, fmt.Errorf("news api returned status: %d", resp.StatusCode)
-			}
-
-			var result struct {
-				Status   string `json:"status"`
-				Articles []struct {
-					Title       string `json:"title"`
-					Description string `json:"description"`
-				} `json:"articles"`
-			}
-
-			if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-				return nil, fmt.Errorf("failed to parse news api response: %v", err)
-			}
-
-			var headlines []string
-			for i, article := range result.Articles {
-				if i >= 3 {
-					break
-				}
-				headlines = append(headlines, article.Title)
-			}
-
-			summary := "No major disruptions found."
-			if len(headlines) > 0 {
-				summary = "Recent news articles suggest potential disruptions related to the query."
-			}
-
 			return &SearchNewsOutput{
 				Headlines: headlines,
 				Summary:   summary,

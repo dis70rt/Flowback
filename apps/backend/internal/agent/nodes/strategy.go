@@ -43,20 +43,10 @@ func NewStrategyAgent(registry *core.ModelRegistry, queries *repo.Queries) (agen
 		},
 	}
 
-	getCustomer, err := tools.NewGetCustomerTool(queries)
-	if err != nil {
-		return nil, err
-	}
-
 	getCommHistory, err := tools.NewGetCommunicationHistoryTool(queries)
 	if err != nil {
 		return nil, err
 	}
 
-	searchNews, err := tools.NewSearchLocalNewsTool()
-	if err != nil {
-		return nil, err
-	}
-
-	return registry.NewSmartAgent(cfg, []tool.Tool{getCustomer, getCommHistory, searchNews})
+	return registry.NewSmartAgent(cfg, []tool.Tool{getCommHistory})
 }
