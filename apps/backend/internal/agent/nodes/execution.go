@@ -24,12 +24,16 @@ func mapActionType(s string) repo.ActionType {
 		return repo.ActionTypeSENDSMS
 	case "send_whatsapp":
 		return repo.ActionTypeSENDWHATSAPP
+	case "send_call":
+		return repo.ActionTypeSENDCALL
 	default:
+		return repo.ActionTypeESCALATETOHUMAN
+	case "escalate_to_voice":
 		return repo.ActionTypeESCALATETOHUMAN
 	}
 }
 
-func NewExecutionNode(queries *repo.Queries, bus pubsub.Publisher) *workflow.FunctionNode {
+func NewExecutionNode(queries *repo.Queries, bus pubsub.Publisher, openRouterAPIKey string) *workflow.FunctionNode {
 	return workflow.NewFunctionNode(
 		"ExecutionNode",
 		func(ctx agent.Context, draft any) (string, error) {
@@ -39,6 +43,9 @@ func NewExecutionNode(queries *repo.Queries, bus pubsub.Publisher) *workflow.Fun
 			
 			reasoningVal, _ := ctx.State().Get("reasoning")
 			reasoning, _ := reasoningVal.(string)
+
+			discountVal, _ := ctx.State().Get("discount_percentage")
+			discount, _ := discountVal.(int)
 
 			customerIDVal, _ := ctx.State().Get("customer_id")
 			customerID, _ := customerIDVal.(string)
@@ -55,6 +62,45 @@ func NewExecutionNode(queries *repo.Queries, bus pubsub.Publisher) *workflow.Fun
 			// Pull our shiny new guaranteed Internal DB UUID from the whiteboard
 			internalUUIDVal, _ := ctx.State().Get("internal_customer_uuid")
 			internalUUID, _ := internalUUIDVal.(uuid.NullUUID)
+
+			
+			audioURL := ""
+			draftStr := ""
+			if m, ok := draft.(map[string]any); ok {
+				if msg, ok := m["message"].(string); ok {
+					draftStr = msg
+				}
+			}
+			if draftStr == "" {
+				if s, ok := draft.(string); ok {
+					draftStr = s
+				} else {
+					b, _ := json.Marshal(draft)
+					draftStr = string(b)
+				}
+			}
+
+			if channel == "send_call" {
+				log.Printf("Synthesizing voice audio using OpenRouter...")
+				url, err := GenerateVoiceAudio(draftStr, openRouterAPIKey)
+				if err != nil {
+					log.Printf("ERROR generating audio: %v", err)
+				} else {
+					audioURL = url
+					log.Printf("Audio Base64 successfully generated.")
+					
+					// Inject audioURL into draft so it saves to DB
+					if m, ok := draft.(map[string]any); ok {
+						m["audio_url"] = audioURL
+						draft = m
+					} else {
+						draft = map[string]any{
+							"message": draftStr,
+							"audio_url": audioURL,
+						}
+					}
+				}
+			}
 
 			// DB Operation 1: Create Recovery Case linked to the REAL human!
 			caseID, err := queries.CreateRecoveryCase(ctx, repo.CreateRecoveryCaseParams{
@@ -73,11 +119,12 @@ func NewExecutionNode(queries *repo.Queries, bus pubsub.Publisher) *workflow.Fun
 			_, err = queries.CreateRecoveryAction(ctx, repo.CreateRecoveryActionParams{
 				RecoveryCaseID: caseID,
 				IdempotencyKey: ctx.InvocationID(),
-				ActionType:     mapActionType(channel),
-				Channel:        sql.NullString{String: channel, Valid: true},
-				AiReasoning:    sql.NullString{String: reasoning, Valid: true},
-				DraftBody:      sql.NullString{String: string(draftBytes), Valid: true},
-				Status:         repo.ActionStatusPENDING,
+				ActionType:         mapActionType(channel),
+				Channel:            sql.NullString{String: channel, Valid: true},
+				AiReasoning:        sql.NullString{String: reasoning, Valid: true},
+				DiscountPercentage: sql.NullInt32{Int32: int32(discount), Valid: discount > 0},
+				DraftBody:          sql.NullString{String: string(draftBytes), Valid: true},
+				Status:             repo.ActionStatusPENDING,
 			})
 			if err != nil {
 				log.Printf("ERROR saving recovery action: %v", err)
@@ -90,6 +137,7 @@ func NewExecutionNode(queries *repo.Queries, bus pubsub.Publisher) *workflow.Fun
 				"customer_id": customerID, // Using string for UI fallback
 				"channel":     channel,
 				"status":      "PENDING_APPROVAL",
+				"audio_url":   audioURL,
 			}
 			if err := bus.Publish(ctx, "dashboard_updates", payload); err != nil {
 				return "", err

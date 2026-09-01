@@ -43,9 +43,10 @@ func createRealRazorpayCustomer(c CustomerSeed, keyID, keySecret string) (string
 	}
 
 	reqBody := map[string]string{
-		"name":    c.Name,
-		"email":   c.Email,
-		"contact": c.Phone,
+		"name":          c.Name,
+		"email":         c.Email,
+		"contact":       c.Phone,
+		"fail_existing": "0",
 	}
 	body, _ := json.Marshal(reqBody)
 	req, _ := http.NewRequest("POST", "https://api.razorpay.com/v1/customers", bytes.NewBuffer(body))

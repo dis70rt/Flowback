@@ -47,9 +47,20 @@ func NewIngestNode(queries *repo.Queries) *workflow.FunctionNode {
 				email := rzp.Payload.Payment.Entity.Email
 				phone := rzp.Payload.Payment.Entity.Contact
 				
-				// 1. Try to find the internal UUID in our DB using Email or Phone!
+				rzpCustID := rzp.Payload.Subscription.Entity.CustomerID
+				if rzpCustID == "" { rzpCustID = rzp.Payload.Order.Entity.CustomerID }
+				if rzpCustID == "" { rzpCustID = rzp.Payload.Payment.Entity.CustomerID }
+
 				var internalUUID uuid.NullUUID
-				if email != "" || phone != "" {
+
+				if rzpCustID != "" {
+					profile, err := queries.GetCustomerProfile(ctx, sql.NullString{String: rzpCustID, Valid: true})
+					if err == nil {
+						internalUUID = uuid.NullUUID{UUID: profile.ID, Valid: true}
+					}
+				}
+
+				if !internalUUID.Valid && (email != "" || phone != "") {
 					dbID, err := queries.GetCustomerByEmailOrPhone(ctx, repo.GetCustomerByEmailOrPhoneParams{
 						Email: sql.NullString{String: email, Valid: email != ""},
 						Phone: sql.NullString{String: phone, Valid: phone != ""},
@@ -58,16 +69,11 @@ func NewIngestNode(queries *repo.Queries) *workflow.FunctionNode {
 						internalUUID = uuid.NullUUID{UUID: dbID, Valid: true}
 					} else if err != sql.ErrNoRows {
 						log.Printf("ERROR looking up customer by email/phone: %v", err)
-					}
 				}
-
-				// We attach the verified internal DB UUID directly to the whiteboard
+				
+				}
 				_ = ctx.State().Set("internal_customer_uuid", internalUUID)
 
-				// We still extract the raw Razorpay strings just in case we need them for metrics
-				rzpCustID := rzp.Payload.Subscription.Entity.CustomerID
-				if rzpCustID == "" { rzpCustID = rzp.Payload.Order.Entity.CustomerID }
-				if rzpCustID == "" { rzpCustID = rzp.Payload.Payment.Entity.CustomerID }
 				if rzpCustID == "" { rzpCustID = phone }
 				if rzpCustID == "" { rzpCustID = email }
 
