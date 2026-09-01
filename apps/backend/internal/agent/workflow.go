@@ -30,7 +30,9 @@ func BuildOrchestrator(
 ) (agent.Agent, error) {
 
 	ingestNode := nodes.NewIngestNode(queries)
-	executionNode := nodes.NewExecutionNode(queries, bus, openRouterAPIKey)
+	execDirect := nodes.NewDirectExecutionNode(queries, bus)
+	execCopywriter := nodes.NewCopywriterExecutionNode(queries, bus)
+	execVoice := nodes.NewVoiceExecutionNode(queries, bus, openRouterAPIKey)
 
 	nodeStrategy, err := workflow.NewAgentNode(strategyAgent, workflow.NodeConfig{})
 	if err != nil {
@@ -98,9 +100,9 @@ func BuildOrchestrator(
 		[]workflow.Edge{
 			{From: policyGuardrail, To: nodeCopywriter, Route: workflow.StringRoute("copywriter")},
 			{From: policyGuardrail, To: nodeVoice, Route: workflow.StringRoute("voice")},
-			{From: policyGuardrail, To: executionNode, Route: workflow.StringRoute("execute")},
-			{From: nodeCopywriter, To: executionNode},
-			{From: nodeVoice, To: executionNode},
+			{From: policyGuardrail, To: execDirect, Route: workflow.StringRoute("execute")},
+			{From: nodeCopywriter, To: execCopywriter},
+			{From: nodeVoice, To: execVoice},
 		},
 	)
 
