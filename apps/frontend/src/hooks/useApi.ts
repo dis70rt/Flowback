@@ -50,3 +50,19 @@ export const useRejectAction = () => {
     },
   });
 };
+
+export const useCustomerPayments = (id?: string) => {
+  return useQuery({
+    queryKey: ['customerPayments', id],
+    queryFn: () => import('../api/services').then(m => m.getCustomerPayments(id!)),
+    enabled: !!id,
+  });
+};
+
+export const useCustomerCommunications = (id?: string) => {
+  return useQuery({
+    queryKey: ['customerCommunications', id],
+    queryFn: () => import('../api/services').then(m => m.getCustomerCommunications(id!)),
+    enabled: !!id,
+  });
+};

@@ -1,7 +1,7 @@
-
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { WorkspaceLayout } from './components/layout/WorkspaceLayout';
 import { Workspace } from './screens/Workspace';
+import { Customers } from './screens/Customers';
 
 export const AppRouter = () => {
   return (
@@ -10,7 +10,7 @@ export const AppRouter = () => {
         <Route path="/" element={<WorkspaceLayout />}>
           <Route index element={<Navigate to="/cases" replace />} />
           <Route path="cases" element={<Workspace />} />
-          <Route path="customers" element={<div className="p-8 text-white">Customers View (Coming Soon)</div>} />
+          <Route path="customers" element={<Customers />} />
         </Route>
       </Routes>
     </BrowserRouter>
