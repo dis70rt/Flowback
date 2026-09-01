@@ -20,6 +20,7 @@ var (
 	ignorerID = uuid.MustParse("44444444-4444-4444-4444-444444444444")
 	fraudID   = uuid.MustParse("55555555-5555-5555-5555-555555555555")
 	nightID   = uuid.MustParse("66666666-6666-6666-6666-666666666666")
+	ceoID     = uuid.MustParse("77777777-7777-7777-7777-777777777777")
 )
 
 type CustomerSeed struct {
@@ -88,6 +89,7 @@ func RunDBSeeder(db *sql.DB, rzpKeyID, rzpKeySecret string) {
 		{ignorerID, "cust_ignorer", "Priya (Ignorer)", "HIGH", "ESTABLISHED", "EMAIL", "Pune", "Maharashtra", 2, 0.90, "priya.ignorer@example.com", "919000000004"},
 		{fraudID, "cust_fraud", "Scammer", "LOW", "NEW", "EMAIL", "Unknown", "Unknown", 0, 0.10, "scammer@example.com", "919000000005"},
 		{nightID, "cust_night", "Rahul (Night)", "MEDIUM", "NEW", "SMS", "Hyderabad", "Telangana", 1, 0.85, "rahul.night@example.com", "919000000006"},
+		{ceoID, "cust_ceo", "Enterprise CEO", "HIGH", "LOYAL", "EMAIL", "Mumbai", "Maharashtra", 5, 0.20, "enterprise.ceo@example.com", "919000000007"},
 	}
 
 	for _, c := range customers {
