@@ -238,7 +238,9 @@ func RunTUI(db *sql.DB, cfg *config.Config) {
 
 		// Set dynamic amounts based on value tier
 		amt := 50000 
-		if targetCustomer.Tier == "HIGH" {
+		if targetCustomer.Name == "Enterprise CEO" {
+			amt = 95000000
+		} else if targetCustomer.Tier == "HIGH" {
 			amt = 999000
 		} else if targetCustomer.Tier == "LOW" {
 			amt = 15000
