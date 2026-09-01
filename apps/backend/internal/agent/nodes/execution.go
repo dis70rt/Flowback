@@ -28,8 +28,6 @@ func mapActionType(s string) repo.ActionType {
 		return repo.ActionTypeSENDCALL
 	default:
 		return repo.ActionTypeESCALATETOHUMAN
-	case "escalate_to_voice":
-		return repo.ActionTypeESCALATETOHUMAN
 	}
 }
 
