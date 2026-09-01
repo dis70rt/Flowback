@@ -1,5 +1,5 @@
 -- name: GetCommunicationHistory :many
-SELECT channel, status, sent_at, opened_at, clicked_at
+SELECT *
 FROM communication_history
 WHERE customer_id = (SELECT id FROM customers WHERE razorpay_customer_id = $1 LIMIT 1)
 ORDER BY sent_at DESC LIMIT 5;

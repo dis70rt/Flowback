@@ -244,28 +244,28 @@ type Customer struct {
 }
 
 type RecoveryAction struct {
-	ID                   uuid.UUID       `json:"id"`
-	RecoveryCaseID       uuid.UUID       `json:"recovery_case_id"`
-	IdempotencyKey       string          `json:"idempotency_key"`
-	ActionType           ActionType      `json:"action_type"`
-	Channel              sql.NullString  `json:"channel"`
-	AiReasoning          sql.NullString  `json:"ai_reasoning"`
-	AiConfidence         sql.NullFloat64 `json:"ai_confidence"`
-	PolicyApproved       bool            `json:"policy_approved"`
-	PolicyBlockReason    sql.NullString  `json:"policy_block_reason"`
-	Status               ActionStatus    `json:"status"`
-	ExternalID           sql.NullString  `json:"external_id"`
-	ErrorMessage         sql.NullString  `json:"error_message"`
-	PaymentLinkID        sql.NullString  `json:"payment_link_id"`
-	PaymentLinkUrl       sql.NullString  `json:"payment_link_url"`
-	PaymentLinkExpiresAt sql.NullTime    `json:"payment_link_expires_at"`
-	ExecutedAt           sql.NullTime    `json:"executed_at"`
-	CreatedAt            time.Time       `json:"created_at"`
-	DiscountPercentage   sql.NullInt32   `json:"discount_percentage"`
-	DraftSubject         sql.NullString  `json:"draft_subject"`
-	DraftBody            sql.NullString  `json:"draft_body"`
-	AsynqTaskID          sql.NullString  `json:"asynq_task_id"`
-	ApprovedByClerkID    sql.NullString  `json:"approved_by_clerk_id"`
+	ID                   uuid.UUID             `json:"id"`
+	RecoveryCaseID       uuid.UUID             `json:"recovery_case_id"`
+	IdempotencyKey       string                `json:"idempotency_key"`
+	ActionType           ActionType            `json:"action_type"`
+	Channel              sql.NullString        `json:"channel"`
+	AiReasoning          sql.NullString        `json:"ai_reasoning"`
+	AiConfidence         sql.NullFloat64       `json:"ai_confidence"`
+	PolicyApproved       bool                  `json:"policy_approved"`
+	PolicyBlockReason    sql.NullString        `json:"policy_block_reason"`
+	Status               ActionStatus          `json:"status"`
+	ExternalID           sql.NullString        `json:"external_id"`
+	ErrorMessage         sql.NullString        `json:"error_message"`
+	PaymentLinkID        sql.NullString        `json:"payment_link_id"`
+	PaymentLinkUrl       sql.NullString        `json:"payment_link_url"`
+	PaymentLinkExpiresAt sql.NullTime          `json:"payment_link_expires_at"`
+	ExecutedAt           sql.NullTime          `json:"executed_at"`
+	CreatedAt            time.Time             `json:"created_at"`
+	DiscountPercentage   sql.NullInt32         `json:"discount_percentage"`
+	AsynqTaskID          sql.NullString        `json:"asynq_task_id"`
+	ApprovedByClerkID    sql.NullString        `json:"approved_by_clerk_id"`
+	DraftPayload         pqtype.NullRawMessage `json:"draft_payload"`
+	HumanEdited          bool                  `json:"human_edited"`
 }
 
 type RecoveryCase struct {

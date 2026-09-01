@@ -8,6 +8,7 @@ import (
 	"github.com/dis70rt/flowback/internal/pubsub"
 	"github.com/dis70rt/flowback/internal/repo"
 	"github.com/google/uuid"
+	"github.com/sqlc-dev/pqtype"
 	"google.golang.org/adk/v2/agent"
 	"google.golang.org/adk/v2/workflow"
 )
@@ -57,16 +58,23 @@ func saveAndPublish(ctx agent.Context, draft any, audioURL string, queries *repo
 	internalUUIDVal, _ := ctx.State().Get("internal_customer_uuid")
 	internalUUID, _ := internalUUIDVal.(uuid.NullUUID)
 
-	// DB Operation 1: Create Recovery Case
-	caseID, err := queries.CreateRecoveryCase(ctx, repo.CreateRecoveryCaseParams{
-		CustomerID:     internalUUID,
-		SubscriptionID: subscriptionID,
-		PaymentID:      sql.NullString{String: paymentID, Valid: true},
-		AmountAtRisk:   amount,
-		Currency:       "INR",
-	})
-	if err != nil {
-		log.Printf("ERROR creating recovery case: %v", err)
+	// DB Operation 1: Find or Create Recovery Case
+	activeCase, err := queries.GetActiveCaseBySubscription(ctx, subscriptionID)
+	var caseID uuid.UUID
+	
+	if err == nil {
+		caseID = activeCase.ID // Append to existing case
+	} else {
+		caseID, err = queries.CreateRecoveryCase(ctx, repo.CreateRecoveryCaseParams{
+			CustomerID:     internalUUID,
+			SubscriptionID: subscriptionID,
+			PaymentID:      sql.NullString{String: paymentID, Valid: true},
+			AmountAtRisk:   amount,
+			Currency:       "INR",
+		})
+		if err != nil {
+			log.Printf("ERROR creating recovery case: %v", err)
+		}
 	}
 
 	// DB Operation 2: Create Recovery Action
@@ -82,7 +90,7 @@ func saveAndPublish(ctx agent.Context, draft any, audioURL string, queries *repo
 		Channel:            sql.NullString{String: channel, Valid: true},
 		AiReasoning:        sql.NullString{String: reasoning, Valid: true},
 		DiscountPercentage: sql.NullInt32{Int32: int32(discount), Valid: discount > 0},
-		DraftBody:          sql.NullString{String: string(draftBytes), Valid: len(draftBytes) > 0},
+		DraftPayload:       pqtype.NullRawMessage{RawMessage: draftBytes, Valid: len(draftBytes) > 0},
 		Status:             repo.ActionStatusPENDING,
 	})
 	if err != nil {

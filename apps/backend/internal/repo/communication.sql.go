@@ -8,39 +8,35 @@ package repo
 import (
 	"context"
 	"database/sql"
-	"time"
 
 	"github.com/google/uuid"
 )
 
 const getCommunicationHistory = `-- name: GetCommunicationHistory :many
-SELECT channel, status, sent_at, opened_at, clicked_at
+SELECT id, recovery_case_id, customer_id, channel, status, message_sid, sent_at, delivered_at, opened_at, clicked_at
 FROM communication_history
 WHERE customer_id = (SELECT id FROM customers WHERE razorpay_customer_id = $1 LIMIT 1)
 ORDER BY sent_at DESC LIMIT 5
 `
 
-type GetCommunicationHistoryRow struct {
-	Channel   string       `json:"channel"`
-	Status    string       `json:"status"`
-	SentAt    time.Time    `json:"sent_at"`
-	OpenedAt  sql.NullTime `json:"opened_at"`
-	ClickedAt sql.NullTime `json:"clicked_at"`
-}
-
-func (q *Queries) GetCommunicationHistory(ctx context.Context, razorpayCustomerID sql.NullString) ([]GetCommunicationHistoryRow, error) {
+func (q *Queries) GetCommunicationHistory(ctx context.Context, razorpayCustomerID sql.NullString) ([]CommunicationHistory, error) {
 	rows, err := q.db.QueryContext(ctx, getCommunicationHistory, razorpayCustomerID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []GetCommunicationHistoryRow
+	var items []CommunicationHistory
 	for rows.Next() {
-		var i GetCommunicationHistoryRow
+		var i CommunicationHistory
 		if err := rows.Scan(
+			&i.ID,
+			&i.RecoveryCaseID,
+			&i.CustomerID,
 			&i.Channel,
 			&i.Status,
+			&i.MessageSid,
 			&i.SentAt,
+			&i.DeliveredAt,
 			&i.OpenedAt,
 			&i.ClickedAt,
 		); err != nil {

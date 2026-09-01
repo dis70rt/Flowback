@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import type { ListCasesResponse, CaseDetailsResponse, MetricsResponse, Customer } from './types';
+import type { ListCasesResponse, CaseDetailsResponse, MetricsResponse, Customer, CommunicationHistory } from './types';
 
 export const getMetrics = async (): Promise<MetricsResponse> => {
   const { data } = await apiClient.get('/metrics');
@@ -28,5 +28,15 @@ export const rejectDraft = async (actionId: string) => {
 
 export const getCustomer = async (id: string): Promise<Customer> => {
   const { data } = await apiClient.get(`/customers/${id}`);
+  return data;
+};
+
+export const getCustomerPayments = async (id: string) => {
+  const { data } = await apiClient.get(`/customers/${id}/payments`);
+  return data;
+};
+
+export const getCustomerCommunications = async (id: string): Promise<CommunicationHistory[]> => {
+  const { data } = await apiClient.get(`/customers/${id}/communications`);
   return data;
 };

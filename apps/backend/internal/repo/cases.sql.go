@@ -8,6 +8,7 @@ package repo
 import (
 	"context"
 	"database/sql"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/sqlc-dev/pqtype"
@@ -66,6 +67,87 @@ func (q *Queries) GetActiveCaseBySubscription(ctx context.Context, subscriptionI
 	return i, err
 }
 
+const getCaseSummary = `-- name: GetCaseSummary :one
+SELECT c.id, c.customer_id, c.subscription_id, c.payment_id, c.razorpay_error_code, c.razorpay_error_desc, c.decline_category, c.ai_diagnosis, c.ai_confidence, c.status, c.retry_count, c.max_retries, c.contact_count, c.max_contacts, c.amount_at_risk, c.currency, c.amount_recovered, c.first_failed_at, c.recovery_deadline, c.recovered_at, c.next_retry_at, c.created_at, c.updated_at, c.ai_strategy, 
+       a.action_type AS latest_action_type, 
+       a.status AS latest_action_status,
+       a.channel AS latest_action_channel
+FROM recovery_cases c
+LEFT JOIN LATERAL (
+    SELECT action_type, status, channel
+    FROM recovery_actions
+    WHERE recovery_case_id = c.id
+    ORDER BY created_at DESC
+    LIMIT 1
+) a ON true
+WHERE c.id = $1 LIMIT 1
+`
+
+type GetCaseSummaryRow struct {
+	ID                  uuid.UUID             `json:"id"`
+	CustomerID          uuid.NullUUID         `json:"customer_id"`
+	SubscriptionID      string                `json:"subscription_id"`
+	PaymentID           sql.NullString        `json:"payment_id"`
+	RazorpayErrorCode   sql.NullString        `json:"razorpay_error_code"`
+	RazorpayErrorDesc   sql.NullString        `json:"razorpay_error_desc"`
+	DeclineCategory     NullDeclineType       `json:"decline_category"`
+	AiDiagnosis         sql.NullString        `json:"ai_diagnosis"`
+	AiConfidence        sql.NullFloat64       `json:"ai_confidence"`
+	Status              RecoveryStatus        `json:"status"`
+	RetryCount          int32                 `json:"retry_count"`
+	MaxRetries          int32                 `json:"max_retries"`
+	ContactCount        int32                 `json:"contact_count"`
+	MaxContacts         int32                 `json:"max_contacts"`
+	AmountAtRisk        int64                 `json:"amount_at_risk"`
+	Currency            string                `json:"currency"`
+	AmountRecovered     sql.NullInt64         `json:"amount_recovered"`
+	FirstFailedAt       time.Time             `json:"first_failed_at"`
+	RecoveryDeadline    time.Time             `json:"recovery_deadline"`
+	RecoveredAt         sql.NullTime          `json:"recovered_at"`
+	NextRetryAt         sql.NullTime          `json:"next_retry_at"`
+	CreatedAt           time.Time             `json:"created_at"`
+	UpdatedAt           time.Time             `json:"updated_at"`
+	AiStrategy          pqtype.NullRawMessage `json:"ai_strategy"`
+	LatestActionType    ActionType            `json:"latest_action_type"`
+	LatestActionStatus  ActionStatus          `json:"latest_action_status"`
+	LatestActionChannel sql.NullString        `json:"latest_action_channel"`
+}
+
+func (q *Queries) GetCaseSummary(ctx context.Context, id uuid.UUID) (GetCaseSummaryRow, error) {
+	row := q.db.QueryRowContext(ctx, getCaseSummary, id)
+	var i GetCaseSummaryRow
+	err := row.Scan(
+		&i.ID,
+		&i.CustomerID,
+		&i.SubscriptionID,
+		&i.PaymentID,
+		&i.RazorpayErrorCode,
+		&i.RazorpayErrorDesc,
+		&i.DeclineCategory,
+		&i.AiDiagnosis,
+		&i.AiConfidence,
+		&i.Status,
+		&i.RetryCount,
+		&i.MaxRetries,
+		&i.ContactCount,
+		&i.MaxContacts,
+		&i.AmountAtRisk,
+		&i.Currency,
+		&i.AmountRecovered,
+		&i.FirstFailedAt,
+		&i.RecoveryDeadline,
+		&i.RecoveredAt,
+		&i.NextRetryAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.AiStrategy,
+		&i.LatestActionType,
+		&i.LatestActionStatus,
+		&i.LatestActionChannel,
+	)
+	return i, err
+}
+
 const getRecoveryCaseByID = `-- name: GetRecoveryCaseByID :one
 SELECT id, customer_id, subscription_id, payment_id, razorpay_error_code, razorpay_error_desc, decline_category, ai_diagnosis, ai_confidence, status, retry_count, max_retries, contact_count, max_contacts, amount_at_risk, currency, amount_recovered, first_failed_at, recovery_deadline, recovered_at, next_retry_at, created_at, updated_at, ai_strategy FROM recovery_cases WHERE id = $1 LIMIT 1
 `
@@ -102,26 +184,71 @@ func (q *Queries) GetRecoveryCaseByID(ctx context.Context, id uuid.UUID) (Recove
 	return i, err
 }
 
-const listRecoveryCases = `-- name: ListRecoveryCases :many
-SELECT id, customer_id, subscription_id, payment_id, razorpay_error_code, razorpay_error_desc, decline_category, ai_diagnosis, ai_confidence, status, retry_count, max_retries, contact_count, max_contacts, amount_at_risk, currency, amount_recovered, first_failed_at, recovery_deadline, recovered_at, next_retry_at, created_at, updated_at, ai_strategy FROM recovery_cases
-ORDER BY created_at DESC
+const listPendingCases = `-- name: ListPendingCases :many
+SELECT c.id, c.customer_id, c.subscription_id, c.payment_id, c.razorpay_error_code, c.razorpay_error_desc, c.decline_category, c.ai_diagnosis, c.ai_confidence, c.status, c.retry_count, c.max_retries, c.contact_count, c.max_contacts, c.amount_at_risk, c.currency, c.amount_recovered, c.first_failed_at, c.recovery_deadline, c.recovered_at, c.next_retry_at, c.created_at, c.updated_at, c.ai_strategy, 
+       a.action_type AS latest_action_type, 
+       a.status AS latest_action_status,
+       a.channel AS latest_action_channel
+FROM recovery_cases c
+JOIN LATERAL (
+    SELECT action_type, status, channel
+    FROM recovery_actions
+    WHERE recovery_case_id = c.id
+    ORDER BY created_at DESC
+    LIMIT 1
+) a ON true
+WHERE EXISTS (
+    SELECT 1 FROM recovery_actions ra 
+    WHERE ra.recovery_case_id = c.id AND ra.status = 'PENDING_APPROVAL'
+)
+ORDER BY c.created_at DESC
 LIMIT $1 OFFSET $2
 `
 
-type ListRecoveryCasesParams struct {
+type ListPendingCasesParams struct {
 	Limit  int32 `json:"limit"`
 	Offset int32 `json:"offset"`
 }
 
-func (q *Queries) ListRecoveryCases(ctx context.Context, arg ListRecoveryCasesParams) ([]RecoveryCase, error) {
-	rows, err := q.db.QueryContext(ctx, listRecoveryCases, arg.Limit, arg.Offset)
+type ListPendingCasesRow struct {
+	ID                  uuid.UUID             `json:"id"`
+	CustomerID          uuid.NullUUID         `json:"customer_id"`
+	SubscriptionID      string                `json:"subscription_id"`
+	PaymentID           sql.NullString        `json:"payment_id"`
+	RazorpayErrorCode   sql.NullString        `json:"razorpay_error_code"`
+	RazorpayErrorDesc   sql.NullString        `json:"razorpay_error_desc"`
+	DeclineCategory     NullDeclineType       `json:"decline_category"`
+	AiDiagnosis         sql.NullString        `json:"ai_diagnosis"`
+	AiConfidence        sql.NullFloat64       `json:"ai_confidence"`
+	Status              RecoveryStatus        `json:"status"`
+	RetryCount          int32                 `json:"retry_count"`
+	MaxRetries          int32                 `json:"max_retries"`
+	ContactCount        int32                 `json:"contact_count"`
+	MaxContacts         int32                 `json:"max_contacts"`
+	AmountAtRisk        int64                 `json:"amount_at_risk"`
+	Currency            string                `json:"currency"`
+	AmountRecovered     sql.NullInt64         `json:"amount_recovered"`
+	FirstFailedAt       time.Time             `json:"first_failed_at"`
+	RecoveryDeadline    time.Time             `json:"recovery_deadline"`
+	RecoveredAt         sql.NullTime          `json:"recovered_at"`
+	NextRetryAt         sql.NullTime          `json:"next_retry_at"`
+	CreatedAt           time.Time             `json:"created_at"`
+	UpdatedAt           time.Time             `json:"updated_at"`
+	AiStrategy          pqtype.NullRawMessage `json:"ai_strategy"`
+	LatestActionType    ActionType            `json:"latest_action_type"`
+	LatestActionStatus  ActionStatus          `json:"latest_action_status"`
+	LatestActionChannel sql.NullString        `json:"latest_action_channel"`
+}
+
+func (q *Queries) ListPendingCases(ctx context.Context, arg ListPendingCasesParams) ([]ListPendingCasesRow, error) {
+	rows, err := q.db.QueryContext(ctx, listPendingCases, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []RecoveryCase
+	var items []ListPendingCasesRow
 	for rows.Next() {
-		var i RecoveryCase
+		var i ListPendingCasesRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.CustomerID,
@@ -147,6 +274,112 @@ func (q *Queries) ListRecoveryCases(ctx context.Context, arg ListRecoveryCasesPa
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.AiStrategy,
+			&i.LatestActionType,
+			&i.LatestActionStatus,
+			&i.LatestActionChannel,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listRecoveryCases = `-- name: ListRecoveryCases :many
+SELECT c.id, c.customer_id, c.subscription_id, c.payment_id, c.razorpay_error_code, c.razorpay_error_desc, c.decline_category, c.ai_diagnosis, c.ai_confidence, c.status, c.retry_count, c.max_retries, c.contact_count, c.max_contacts, c.amount_at_risk, c.currency, c.amount_recovered, c.first_failed_at, c.recovery_deadline, c.recovered_at, c.next_retry_at, c.created_at, c.updated_at, c.ai_strategy, 
+       a.action_type AS latest_action_type, 
+       a.status AS latest_action_status,
+       a.channel AS latest_action_channel
+FROM recovery_cases c
+LEFT JOIN LATERAL (
+    SELECT action_type, status, channel
+    FROM recovery_actions
+    WHERE recovery_case_id = c.id
+    ORDER BY created_at DESC
+    LIMIT 1
+) a ON true
+ORDER BY c.created_at DESC
+LIMIT $1 OFFSET $2
+`
+
+type ListRecoveryCasesParams struct {
+	Limit  int32 `json:"limit"`
+	Offset int32 `json:"offset"`
+}
+
+type ListRecoveryCasesRow struct {
+	ID                  uuid.UUID             `json:"id"`
+	CustomerID          uuid.NullUUID         `json:"customer_id"`
+	SubscriptionID      string                `json:"subscription_id"`
+	PaymentID           sql.NullString        `json:"payment_id"`
+	RazorpayErrorCode   sql.NullString        `json:"razorpay_error_code"`
+	RazorpayErrorDesc   sql.NullString        `json:"razorpay_error_desc"`
+	DeclineCategory     NullDeclineType       `json:"decline_category"`
+	AiDiagnosis         sql.NullString        `json:"ai_diagnosis"`
+	AiConfidence        sql.NullFloat64       `json:"ai_confidence"`
+	Status              RecoveryStatus        `json:"status"`
+	RetryCount          int32                 `json:"retry_count"`
+	MaxRetries          int32                 `json:"max_retries"`
+	ContactCount        int32                 `json:"contact_count"`
+	MaxContacts         int32                 `json:"max_contacts"`
+	AmountAtRisk        int64                 `json:"amount_at_risk"`
+	Currency            string                `json:"currency"`
+	AmountRecovered     sql.NullInt64         `json:"amount_recovered"`
+	FirstFailedAt       time.Time             `json:"first_failed_at"`
+	RecoveryDeadline    time.Time             `json:"recovery_deadline"`
+	RecoveredAt         sql.NullTime          `json:"recovered_at"`
+	NextRetryAt         sql.NullTime          `json:"next_retry_at"`
+	CreatedAt           time.Time             `json:"created_at"`
+	UpdatedAt           time.Time             `json:"updated_at"`
+	AiStrategy          pqtype.NullRawMessage `json:"ai_strategy"`
+	LatestActionType    ActionType            `json:"latest_action_type"`
+	LatestActionStatus  ActionStatus          `json:"latest_action_status"`
+	LatestActionChannel sql.NullString        `json:"latest_action_channel"`
+}
+
+func (q *Queries) ListRecoveryCases(ctx context.Context, arg ListRecoveryCasesParams) ([]ListRecoveryCasesRow, error) {
+	rows, err := q.db.QueryContext(ctx, listRecoveryCases, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListRecoveryCasesRow
+	for rows.Next() {
+		var i ListRecoveryCasesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.CustomerID,
+			&i.SubscriptionID,
+			&i.PaymentID,
+			&i.RazorpayErrorCode,
+			&i.RazorpayErrorDesc,
+			&i.DeclineCategory,
+			&i.AiDiagnosis,
+			&i.AiConfidence,
+			&i.Status,
+			&i.RetryCount,
+			&i.MaxRetries,
+			&i.ContactCount,
+			&i.MaxContacts,
+			&i.AmountAtRisk,
+			&i.Currency,
+			&i.AmountRecovered,
+			&i.FirstFailedAt,
+			&i.RecoveryDeadline,
+			&i.RecoveredAt,
+			&i.NextRetryAt,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.AiStrategy,
+			&i.LatestActionType,
+			&i.LatestActionStatus,
+			&i.LatestActionChannel,
 		); err != nil {
 			return nil, err
 		}

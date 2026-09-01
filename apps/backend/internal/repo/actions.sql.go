@@ -11,44 +11,51 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/sqlc-dev/pqtype"
 )
 
 const approveAction = `-- name: ApproveAction :exec
 UPDATE recovery_actions
-SET status = 'APPROVED', approved_by_clerk_id = $2
+SET status = 'APPROVED', approved_by_clerk_id = $2, payment_link_id = $3, payment_link_url = $4
 WHERE id = $1
 `
 
 type ApproveActionParams struct {
 	ID                uuid.UUID      `json:"id"`
 	ApprovedByClerkID sql.NullString `json:"approved_by_clerk_id"`
+	PaymentLinkID     sql.NullString `json:"payment_link_id"`
+	PaymentLinkUrl    sql.NullString `json:"payment_link_url"`
 }
 
 func (q *Queries) ApproveAction(ctx context.Context, arg ApproveActionParams) error {
-	_, err := q.db.ExecContext(ctx, approveAction, arg.ID, arg.ApprovedByClerkID)
+	_, err := q.db.ExecContext(ctx, approveAction,
+		arg.ID,
+		arg.ApprovedByClerkID,
+		arg.PaymentLinkID,
+		arg.PaymentLinkUrl,
+	)
 	return err
 }
 
 const createRecoveryAction = `-- name: CreateRecoveryAction :one
 INSERT INTO recovery_actions (
     recovery_case_id, idempotency_key, action_type, channel, 
-    ai_reasoning, discount_percentage, draft_subject, draft_body, status
+    ai_reasoning, discount_percentage, draft_payload, status
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8, $9
+    $1, $2, $3, $4, $5, $6, $7, $8
 )
 RETURNING id
 `
 
 type CreateRecoveryActionParams struct {
-	RecoveryCaseID     uuid.UUID      `json:"recovery_case_id"`
-	IdempotencyKey     string         `json:"idempotency_key"`
-	ActionType         ActionType     `json:"action_type"`
-	Channel            sql.NullString `json:"channel"`
-	AiReasoning        sql.NullString `json:"ai_reasoning"`
-	DiscountPercentage sql.NullInt32  `json:"discount_percentage"`
-	DraftSubject       sql.NullString `json:"draft_subject"`
-	DraftBody          sql.NullString `json:"draft_body"`
-	Status             ActionStatus   `json:"status"`
+	RecoveryCaseID     uuid.UUID             `json:"recovery_case_id"`
+	IdempotencyKey     string                `json:"idempotency_key"`
+	ActionType         ActionType            `json:"action_type"`
+	Channel            sql.NullString        `json:"channel"`
+	AiReasoning        sql.NullString        `json:"ai_reasoning"`
+	DiscountPercentage sql.NullInt32         `json:"discount_percentage"`
+	DraftPayload       pqtype.NullRawMessage `json:"draft_payload"`
+	Status             ActionStatus          `json:"status"`
 }
 
 func (q *Queries) CreateRecoveryAction(ctx context.Context, arg CreateRecoveryActionParams) (uuid.UUID, error) {
@@ -59,13 +66,38 @@ func (q *Queries) CreateRecoveryAction(ctx context.Context, arg CreateRecoveryAc
 		arg.Channel,
 		arg.AiReasoning,
 		arg.DiscountPercentage,
-		arg.DraftSubject,
-		arg.DraftBody,
+		arg.DraftPayload,
 		arg.Status,
 	)
 	var id uuid.UUID
 	err := row.Scan(&id)
 	return id, err
+}
+
+const getActionAndCaseForApproval = `-- name: GetActionAndCaseForApproval :one
+SELECT a.id as action_id, a.discount_percentage, c.id as case_id, c.amount_at_risk
+FROM recovery_actions a
+JOIN recovery_cases c ON a.recovery_case_id = c.id
+WHERE a.id = $1 LIMIT 1
+`
+
+type GetActionAndCaseForApprovalRow struct {
+	ActionID           uuid.UUID     `json:"action_id"`
+	DiscountPercentage sql.NullInt32 `json:"discount_percentage"`
+	CaseID             uuid.UUID     `json:"case_id"`
+	AmountAtRisk       int64         `json:"amount_at_risk"`
+}
+
+func (q *Queries) GetActionAndCaseForApproval(ctx context.Context, id uuid.UUID) (GetActionAndCaseForApprovalRow, error) {
+	row := q.db.QueryRowContext(ctx, getActionAndCaseForApproval, id)
+	var i GetActionAndCaseForApprovalRow
+	err := row.Scan(
+		&i.ActionID,
+		&i.DiscountPercentage,
+		&i.CaseID,
+		&i.AmountAtRisk,
+	)
+	return i, err
 }
 
 const getActionByIdempotencyKey = `-- name: GetActionByIdempotencyKey :one
@@ -85,23 +117,25 @@ func (q *Queries) GetActionByIdempotencyKey(ctx context.Context, idempotencyKey 
 }
 
 const getActionsByCase = `-- name: GetActionsByCase :many
-SELECT id, action_type, channel, status, ai_reasoning, draft_subject, draft_body, discount_percentage, executed_at, created_at
+SELECT id, action_type, channel, status, ai_reasoning, draft_payload, discount_percentage, payment_link_id, payment_link_url, human_edited, executed_at, created_at
 FROM recovery_actions
 WHERE recovery_case_id = $1
 ORDER BY created_at DESC
 `
 
 type GetActionsByCaseRow struct {
-	ID                 uuid.UUID      `json:"id"`
-	ActionType         ActionType     `json:"action_type"`
-	Channel            sql.NullString `json:"channel"`
-	Status             ActionStatus   `json:"status"`
-	AiReasoning        sql.NullString `json:"ai_reasoning"`
-	DraftSubject       sql.NullString `json:"draft_subject"`
-	DraftBody          sql.NullString `json:"draft_body"`
-	DiscountPercentage sql.NullInt32  `json:"discount_percentage"`
-	ExecutedAt         sql.NullTime   `json:"executed_at"`
-	CreatedAt          time.Time      `json:"created_at"`
+	ID                 uuid.UUID             `json:"id"`
+	ActionType         ActionType            `json:"action_type"`
+	Channel            sql.NullString        `json:"channel"`
+	Status             ActionStatus          `json:"status"`
+	AiReasoning        sql.NullString        `json:"ai_reasoning"`
+	DraftPayload       pqtype.NullRawMessage `json:"draft_payload"`
+	DiscountPercentage sql.NullInt32         `json:"discount_percentage"`
+	PaymentLinkID      sql.NullString        `json:"payment_link_id"`
+	PaymentLinkUrl     sql.NullString        `json:"payment_link_url"`
+	HumanEdited        bool                  `json:"human_edited"`
+	ExecutedAt         sql.NullTime          `json:"executed_at"`
+	CreatedAt          time.Time             `json:"created_at"`
 }
 
 func (q *Queries) GetActionsByCase(ctx context.Context, recoveryCaseID uuid.UUID) ([]GetActionsByCaseRow, error) {
@@ -119,9 +153,11 @@ func (q *Queries) GetActionsByCase(ctx context.Context, recoveryCaseID uuid.UUID
 			&i.Channel,
 			&i.Status,
 			&i.AiReasoning,
-			&i.DraftSubject,
-			&i.DraftBody,
+			&i.DraftPayload,
 			&i.DiscountPercentage,
+			&i.PaymentLinkID,
+			&i.PaymentLinkUrl,
+			&i.HumanEdited,
 			&i.ExecutedAt,
 			&i.CreatedAt,
 		); err != nil {
@@ -139,21 +175,20 @@ func (q *Queries) GetActionsByCase(ctx context.Context, recoveryCaseID uuid.UUID
 }
 
 const getPendingActions = `-- name: GetPendingActions :many
-SELECT id, recovery_case_id, action_type, channel, ai_reasoning, discount_percentage, draft_subject, draft_body
+SELECT id, recovery_case_id, action_type, channel, ai_reasoning, discount_percentage, draft_payload
 FROM recovery_actions
 WHERE status = 'PENDING_APPROVAL'
 ORDER BY created_at ASC
 `
 
 type GetPendingActionsRow struct {
-	ID                 uuid.UUID      `json:"id"`
-	RecoveryCaseID     uuid.UUID      `json:"recovery_case_id"`
-	ActionType         ActionType     `json:"action_type"`
-	Channel            sql.NullString `json:"channel"`
-	AiReasoning        sql.NullString `json:"ai_reasoning"`
-	DiscountPercentage sql.NullInt32  `json:"discount_percentage"`
-	DraftSubject       sql.NullString `json:"draft_subject"`
-	DraftBody          sql.NullString `json:"draft_body"`
+	ID                 uuid.UUID             `json:"id"`
+	RecoveryCaseID     uuid.UUID             `json:"recovery_case_id"`
+	ActionType         ActionType            `json:"action_type"`
+	Channel            sql.NullString        `json:"channel"`
+	AiReasoning        sql.NullString        `json:"ai_reasoning"`
+	DiscountPercentage sql.NullInt32         `json:"discount_percentage"`
+	DraftPayload       pqtype.NullRawMessage `json:"draft_payload"`
 }
 
 func (q *Queries) GetPendingActions(ctx context.Context) ([]GetPendingActionsRow, error) {
@@ -172,8 +207,7 @@ func (q *Queries) GetPendingActions(ctx context.Context) ([]GetPendingActionsRow
 			&i.Channel,
 			&i.AiReasoning,
 			&i.DiscountPercentage,
-			&i.DraftSubject,
-			&i.DraftBody,
+			&i.DraftPayload,
 		); err != nil {
 			return nil, err
 		}
@@ -238,16 +272,16 @@ func (q *Queries) UpdateActionAsynqTask(ctx context.Context, arg UpdateActionAsy
 
 const updateActionDraft = `-- name: UpdateActionDraft :exec
 UPDATE recovery_actions
-SET draft_body = $2
+SET draft_payload = $2, human_edited = TRUE
 WHERE id = $1
 `
 
 type UpdateActionDraftParams struct {
-	ID        uuid.UUID      `json:"id"`
-	DraftBody sql.NullString `json:"draft_body"`
+	ID           uuid.UUID             `json:"id"`
+	DraftPayload pqtype.NullRawMessage `json:"draft_payload"`
 }
 
 func (q *Queries) UpdateActionDraft(ctx context.Context, arg UpdateActionDraftParams) error {
-	_, err := q.db.ExecContext(ctx, updateActionDraft, arg.ID, arg.DraftBody)
+	_, err := q.db.ExecContext(ctx, updateActionDraft, arg.ID, arg.DraftPayload)
 	return err
 }

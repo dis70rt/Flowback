@@ -76,3 +76,13 @@ export interface CaseDetailsResponse {
   case: RecoveryCase;
   actions: RecoveryAction[];
 }
+
+export interface CommunicationHistory {
+  id: string;
+  recovery_case_id: string;
+  customer_id: string;
+  channel: string;
+  status: string;
+  message_sid: NullString;
+  sent_at: string;
+}

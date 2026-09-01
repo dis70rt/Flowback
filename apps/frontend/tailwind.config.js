@@ -9,6 +9,19 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        slate: {
+          50: '#ffffff',
+          100: '#e0def4',
+          200: '#cfc9c2',
+          300: '#c0caf5',
+          400: '#a9b1d6',
+          500: '#787c99',
+          600: '#565f89',
+          700: '#444b6a',
+          800: '#343a52',
+          900: '#1f2335',
+          950: '#24283b',
+        },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
