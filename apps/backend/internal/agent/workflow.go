@@ -24,11 +24,13 @@ func BuildOrchestrator(
 	queries *repo.Queries,
 	strategyAgent agent.Agent,
 	copywriterAgent agent.Agent,
+	voiceAgent agent.Agent,
 	bus pubsub.Publisher,
+	openRouterAPIKey string,
 ) (agent.Agent, error) {
 
 	ingestNode := nodes.NewIngestNode(queries)
-	executionNode := nodes.NewExecutionNode(queries, bus)
+	executionNode := nodes.NewExecutionNode(queries, bus, openRouterAPIKey)
 
 	nodeStrategy, err := workflow.NewAgentNode(strategyAgent, workflow.NodeConfig{})
 	if err != nil {
@@ -40,20 +42,49 @@ func BuildOrchestrator(
 		return nil, err
 	}
 
+	nodeVoice, err := workflow.NewAgentNode(voiceAgent, workflow.NodeConfig{})
+	if err != nil {
+		return nil, err
+	}
+
 	policyGuardrail := workflow.NewEmittingFunctionNode(
 		"PolicyGuardrail",
 		func(ctx agent.Context, strategyOut core.StrategyOutput, emit func(*session.Event) error) (any, error) {
 			route := "copywriter"
 			if strategyOut.Action == "silent_retry" {
 				route = "execute"
+			} else if strategyOut.Action == "send_call" {
+				route = "voice"
 			}
 			
 			_ = ctx.State().Set("channel", strategyOut.Action)
 			_ = ctx.State().Set("reasoning", strategyOut.Reasoning)
+			_ = ctx.State().Set("discount_percentage", strategyOut.DiscountPercentage)
 
 			ev := session.NewEvent(ctx, ctx.InvocationID())
 			ev.Routes = []string{route}
-			ev.Output = strategyOut 
+			
+			if route == "copywriter" || route == "voice" {
+				profileStr := "Name: Unknown, Tier: Basic"
+				uid, err := ctx.State().Get("internal_customer_uuid")
+				if err == nil {
+					if u, ok := uid.(uuid.NullUUID); ok && u.Valid {
+						cust, err := queries.GetCustomerByID(ctx, u.UUID)
+						if err == nil {
+							profileStr = "Name: " + cust.Name.String + ", Tier: " + cust.ValueTier.String + ", City: " + cust.City.String
+						}
+					}
+				}
+				
+				ev.Output = map[string]string{
+					"Action": strategyOut.Action,
+					"StrategyReasoning": strategyOut.Reasoning,
+					"CustomerProfile": profileStr,
+				}
+			} else {
+				ev.Output = strategyOut 
+			}
+			
 			if err := emit(ev); err != nil {
 				return nil, err
 			}
@@ -66,8 +97,10 @@ func BuildOrchestrator(
 		workflow.Chain(workflow.Start, ingestNode, nodeStrategy, policyGuardrail),
 		[]workflow.Edge{
 			{From: policyGuardrail, To: nodeCopywriter, Route: workflow.StringRoute("copywriter")},
+			{From: policyGuardrail, To: nodeVoice, Route: workflow.StringRoute("voice")},
 			{From: policyGuardrail, To: executionNode, Route: workflow.StringRoute("execute")},
 			{From: nodeCopywriter, To: executionNode},
+			{From: nodeVoice, To: executionNode},
 		},
 	)
 

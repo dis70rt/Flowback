@@ -16,9 +16,10 @@ var strategySchema = &genai.Schema{
 	Properties: map[string]*genai.Schema{
 		"action": {
 			Type: genai.TypeString,
-			Enum: []string{"silent_retry", "send_email", "send_sms", "create_payment_link"},
+			Enum: []string{"silent_retry", "send_email", "send_sms", "send_whatsapp", "create_payment_link", "send_call"},
 		},
 		"delay_hours": {Type: genai.TypeInteger},
+		"discount_percentage": {Type: genai.TypeInteger},
 		"reasoning":   {Type: genai.TypeString},
 		"confidence": {
 			Type: genai.TypeNumber,

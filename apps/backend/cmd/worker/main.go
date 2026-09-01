@@ -51,9 +51,14 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to init copywriter agent: %v", err)
 	}
+	
+	voiceAgent, err := nodes.NewVoiceAgent(registry)
+	if err != nil {
+		log.Fatalf("failed to init voice agent: %v", err)
+	}
 
 	bus, _ := pubsub.New(cfg.RedisURL)
-	orchestrator, err := flowagent.BuildOrchestrator(ctx, queries, strategyAgent, copywriterAgent, bus)
+	orchestrator, err := flowagent.BuildOrchestrator(ctx, queries, strategyAgent, copywriterAgent, voiceAgent, bus, cfg.OpenRouterAPIKey)
 	if err != nil {
 		log.Fatalf("failed to build orchestrator: %v", err)
 	}

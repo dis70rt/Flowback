@@ -14,8 +14,9 @@ import (
 
 const (
 	openRouterBaseURL = "https://openrouter.ai/api/v1"
-	DefaultModel      = "z-ai/glm-5.3-flash"
-	CopywriterModel   = "z-ai/glm-5.3-flash" // Highly recommended for creative writing / tone
+	DefaultModel      = "google/gemini-3.7-flash"
+	CopywriterModel   = "google/gemini-3.7-flash" // Recommended for production-level copy
+	VoiceModel        = "openai/gpt-audio-mini"
 )
 
 // ModelRegistry holds our initialized ADK model clients.
@@ -23,6 +24,7 @@ type ModelRegistry struct {
 	FastModel     model.LLM // For simple tasks: classification, diagnosis
 	SmartModel    model.LLM // For complex reasoning: strategy, decision making
 	CreativeModel model.LLM // For writing human-facing text: emails, SMS
+	VoiceModel    model.LLM // For generating audio
 }
 
 // InitModels sets up the OpenRouter HTTP connections exactly once.
@@ -55,10 +57,19 @@ func InitModels(ctx context.Context, apiKey, defaultModelName string) (*ModelReg
 		return nil, fmt.Errorf("registry: creative model: %w", err)
 	}
 
+	voiceModel, err := openaimodel.NewModel(ctx, VoiceModel, &openaimodel.ClientConfig{
+		APIKey:  apiKey,
+		BaseURL: openRouterBaseURL,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("registry: voice model: %w", err)
+	}
+
 	return &ModelRegistry{
 		FastModel:     fastModel,
 		SmartModel:    smartModel,
 		CreativeModel: creativeModel,
+		VoiceModel:    voiceModel,
 	}, nil
 }
 
@@ -112,3 +123,16 @@ func (r *ModelRegistry) NewCreativeAgent(cfg AgentConfig, tools []tool.Tool) (ag
 }
 
 func ptr[T any](v T) *T { return &v }
+
+func (r *ModelRegistry) NewVoiceAgent(cfg AgentConfig, tools []tool.Tool) (agent.Agent, error) {
+	return llmagent.New(llmagent.Config{
+		Name:                  cfg.Name,
+		Model:                 r.VoiceModel,
+		Description:           cfg.Description,
+		Instruction:           cfg.Instruction,
+		OutputKey:             cfg.OutputKey,
+		OutputSchema:          cfg.OutputSchema,
+		GenerateContentConfig: cfg.GenerateContentConfig,
+		Tools:                 tools,
+	})
+}

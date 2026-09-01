@@ -72,6 +72,7 @@ const (
 	ActionTypeSENDWHATSAPP      ActionType = "SEND_WHATSAPP"
 	ActionTypeESCALATETOHUMAN   ActionType = "ESCALATE_TO_HUMAN"
 	ActionTypeMARKUNRECOVERABLE ActionType = "MARK_UNRECOVERABLE"
+	ActionTypeSENDCALL          ActionType = "SEND_CALL"
 )
 
 func (e *ActionType) Scan(src interface{}) error {
