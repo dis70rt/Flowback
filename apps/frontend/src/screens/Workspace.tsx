@@ -144,9 +144,28 @@ const SelectedCaseView = ({ caseId }: { caseId: string }) => {
 
   if (isLoadingCase) {
     return (
-      <div className="flex-1 p-8">
-        <Skeleton className="h-6 w-48 mb-8 bg-slate-800" />
-        <Skeleton className="h-48 w-full max-w-md bg-slate-800" />
+      <div className="flex-1 flex">
+        {/* Center Column Skeleton */}
+        <div className="flex-1 border-r border-slate-800 p-6 bg-slate-950 flex flex-col items-center justify-center overflow-hidden">
+          <Skeleton className="w-[380px] h-[760px] rounded-[3.5rem] bg-slate-900/40 border-[14px] border-slate-900/60 shadow-2xl" />
+        </div>
+
+        {/* Right Column Skeleton */}
+        <div className="w-[380px] p-6 flex flex-col gap-6 bg-slate-950">
+          <div className="flex items-center justify-between mb-2">
+            <Skeleton className="h-6 w-32 bg-slate-800/80" />
+            <Skeleton className="h-6 w-24 bg-slate-800/80 rounded-full" />
+          </div>
+          
+          {/* Action Card Skeleton */}
+          <Skeleton className="h-[140px] w-full bg-slate-900/60 rounded-xl border border-slate-800/50" />
+
+          {/* Customer Card Skeleton */}
+          <Skeleton className="h-[210px] w-full bg-slate-900/40 rounded-xl border border-slate-800/40" />
+
+          {/* Case Metrics Skeleton */}
+          <Skeleton className="h-[220px] w-full bg-slate-900/40 rounded-xl border border-slate-800/40" />
+        </div>
       </div>
     );
   }
