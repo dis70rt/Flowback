@@ -41,7 +41,7 @@ type ListCasesResponse struct {
 }
 
 type EditDraftRequest struct {
-	DraftBody string `json:"draft_body" binding:"required"`
+	DraftPayload json.RawMessage `json:"draft_payload" binding:"required"`
 }
 
 func (h *CaseHandler) ListCases(c *gin.Context) {
@@ -162,7 +162,7 @@ func (h *CaseHandler) EditDraft(c *gin.Context) {
 
 	err = h.queries.UpdateActionDraft(c.Request.Context(), repo.UpdateActionDraftParams{
 		ID:           actionID,
-		DraftPayload: pqtype.NullRawMessage{RawMessage: json.RawMessage(req.DraftBody), Valid: len(req.DraftBody) > 0},
+		DraftPayload: pqtype.NullRawMessage{RawMessage: req.DraftPayload, Valid: len(req.DraftPayload) > 0},
 	})
 
 	if err != nil {

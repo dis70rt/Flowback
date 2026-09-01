@@ -117,7 +117,7 @@ func (q *Queries) GetActionByIdempotencyKey(ctx context.Context, idempotencyKey 
 }
 
 const getActionsByCase = `-- name: GetActionsByCase :many
-SELECT id, action_type, channel, status, ai_reasoning, draft_payload, discount_percentage, executed_at, created_at
+SELECT id, action_type, channel, status, ai_reasoning, draft_payload, discount_percentage, payment_link_id, payment_link_url, human_edited, executed_at, created_at
 FROM recovery_actions
 WHERE recovery_case_id = $1
 ORDER BY created_at DESC
@@ -131,6 +131,9 @@ type GetActionsByCaseRow struct {
 	AiReasoning        sql.NullString        `json:"ai_reasoning"`
 	DraftPayload       pqtype.NullRawMessage `json:"draft_payload"`
 	DiscountPercentage sql.NullInt32         `json:"discount_percentage"`
+	PaymentLinkID      sql.NullString        `json:"payment_link_id"`
+	PaymentLinkUrl     sql.NullString        `json:"payment_link_url"`
+	HumanEdited        bool                  `json:"human_edited"`
 	ExecutedAt         sql.NullTime          `json:"executed_at"`
 	CreatedAt          time.Time             `json:"created_at"`
 }
@@ -152,6 +155,9 @@ func (q *Queries) GetActionsByCase(ctx context.Context, recoveryCaseID uuid.UUID
 			&i.AiReasoning,
 			&i.DraftPayload,
 			&i.DiscountPercentage,
+			&i.PaymentLinkID,
+			&i.PaymentLinkUrl,
+			&i.HumanEdited,
 			&i.ExecutedAt,
 			&i.CreatedAt,
 		); err != nil {

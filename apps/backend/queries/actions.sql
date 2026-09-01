@@ -14,7 +14,7 @@ WHERE status = 'PENDING_APPROVAL'
 ORDER BY created_at ASC;
 
 -- name: GetActionsByCase :many
-SELECT id, action_type, channel, status, ai_reasoning, draft_payload, discount_percentage, executed_at, created_at
+SELECT id, action_type, channel, status, ai_reasoning, draft_payload, discount_percentage, payment_link_id, payment_link_url, human_edited, executed_at, created_at
 FROM recovery_actions
 WHERE recovery_case_id = $1
 ORDER BY created_at DESC;

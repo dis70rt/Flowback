@@ -269,10 +269,10 @@ components:
     EditDraftRequest:
       type: object
       required:
-        - draft_body
+        - draft_payload
       properties:
-        draft_body:
-          type: string
+        draft_payload:
+          type: object
     
     # Standard sql.Null* Types in Go
     NullString:
@@ -435,10 +435,10 @@ components:
           format: date-time
         discount_percentage:
           $ref: '#/components/schemas/NullInt32'
-        draft_subject:
-          $ref: '#/components/schemas/NullString'
-        draft_body:
-          $ref: '#/components/schemas/NullString'
+        draft_payload:
+          $ref: '#/components/schemas/NullRawMessage'
+        human_edited:
+          type: boolean
         asynq_task_id:
           $ref: '#/components/schemas/NullString'
         approved_by_clerk_id:
