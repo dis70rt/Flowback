@@ -59,16 +59,23 @@ func saveAndPublish(ctx agent.Context, draft any, audioURL string, queries *repo
 	internalUUID, _ := internalUUIDVal.(uuid.NullUUID)
 
 	// DB Operation 1: Find or Create Recovery Case
-	activeCase, err := queries.GetActiveCaseBySubscription(ctx, subscriptionID)
 	var caseID uuid.UUID
-	
-	if err == nil {
-		caseID = activeCase.ID // Append to existing case
-	} else {
+	var err error
+
+	// ONLY attempt grouping if this is actually a subscription
+	if subscriptionID != "" {
+		activeCase, getErr := queries.GetActiveCaseBySubscription(ctx, subscriptionID)
+		if getErr == nil {
+			caseID = activeCase.ID // Append to existing case
+		}
+	}
+
+	// If it's a one-off payment (or a new subscription), create a new case
+	if caseID == uuid.Nil {
 		caseID, err = queries.CreateRecoveryCase(ctx, repo.CreateRecoveryCaseParams{
 			CustomerID:     internalUUID,
 			SubscriptionID: subscriptionID,
-			PaymentID:      sql.NullString{String: paymentID, Valid: true},
+			PaymentID:      sql.NullString{String: paymentID, Valid: paymentID != ""},
 			AmountAtRisk:   amount,
 			Currency:       "INR",
 		})
