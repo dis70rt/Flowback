@@ -8,6 +8,7 @@ import (
 	"github.com/dis70rt/flowback/internal/pubsub"
 	"github.com/dis70rt/flowback/internal/repo"
 	"github.com/google/uuid"
+	"github.com/sqlc-dev/pqtype"
 	"google.golang.org/adk/v2/agent"
 	"google.golang.org/adk/v2/workflow"
 )
@@ -82,7 +83,7 @@ func saveAndPublish(ctx agent.Context, draft any, audioURL string, queries *repo
 		Channel:            sql.NullString{String: channel, Valid: true},
 		AiReasoning:        sql.NullString{String: reasoning, Valid: true},
 		DiscountPercentage: sql.NullInt32{Int32: int32(discount), Valid: discount > 0},
-		DraftBody:          sql.NullString{String: string(draftBytes), Valid: len(draftBytes) > 0},
+		DraftPayload:       pqtype.NullRawMessage{RawMessage: draftBytes, Valid: len(draftBytes) > 0},
 		Status:             repo.ActionStatusPENDING,
 	})
 	if err != nil {

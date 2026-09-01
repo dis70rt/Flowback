@@ -8,43 +8,26 @@ package repo
 import (
 	"context"
 	"encoding/json"
-
-	"github.com/google/uuid"
 )
 
-const insertWebhookEvent = `-- name: InsertWebhookEvent :one
+const logWebhookEvent = `-- name: LogWebhookEvent :exec
 INSERT INTO webhook_events (razorpay_event_id, event_type, payload, signature)
 VALUES ($1, $2, $3, $4)
-ON CONFLICT (razorpay_event_id) DO NOTHING
-RETURNING id
 `
 
-type InsertWebhookEventParams struct {
+type LogWebhookEventParams struct {
 	RazorpayEventID string          `json:"razorpay_event_id"`
 	EventType       string          `json:"event_type"`
 	Payload         json.RawMessage `json:"payload"`
 	Signature       string          `json:"signature"`
 }
 
-func (q *Queries) InsertWebhookEvent(ctx context.Context, arg InsertWebhookEventParams) (uuid.UUID, error) {
-	row := q.db.QueryRowContext(ctx, insertWebhookEvent,
+func (q *Queries) LogWebhookEvent(ctx context.Context, arg LogWebhookEventParams) error {
+	_, err := q.db.ExecContext(ctx, logWebhookEvent,
 		arg.RazorpayEventID,
 		arg.EventType,
 		arg.Payload,
 		arg.Signature,
 	)
-	var id uuid.UUID
-	err := row.Scan(&id)
-	return id, err
-}
-
-const markWebhookProcessed = `-- name: MarkWebhookProcessed :exec
-UPDATE webhook_events
-SET processed = TRUE, processed_at = NOW()
-WHERE id = $1
-`
-
-func (q *Queries) MarkWebhookProcessed(ctx context.Context, id uuid.UUID) error {
-	_, err := q.db.ExecContext(ctx, markWebhookProcessed, id)
 	return err
 }

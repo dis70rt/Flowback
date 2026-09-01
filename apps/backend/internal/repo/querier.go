@@ -29,10 +29,9 @@ type Querier interface {
 	InsertAuditLog(ctx context.Context, arg InsertAuditLogParams) error
 	InsertCommunicationHistory(ctx context.Context, arg InsertCommunicationHistoryParams) (uuid.UUID, error)
 	InsertCustomer(ctx context.Context, arg InsertCustomerParams) (uuid.UUID, error)
-	InsertWebhookEvent(ctx context.Context, arg InsertWebhookEventParams) (uuid.UUID, error)
 	ListRecoveryCases(ctx context.Context, arg ListRecoveryCasesParams) ([]RecoveryCase, error)
+	LogWebhookEvent(ctx context.Context, arg LogWebhookEventParams) error
 	MarkActionExecuted(ctx context.Context, arg MarkActionExecutedParams) error
-	MarkWebhookProcessed(ctx context.Context, id uuid.UUID) error
 	RejectAction(ctx context.Context, arg RejectActionParams) error
 	UpdateActionAsynqTask(ctx context.Context, arg UpdateActionAsynqTaskParams) error
 	UpdateActionDraft(ctx context.Context, arg UpdateActionDraftParams) error
