@@ -52,11 +52,13 @@ export const Workspace = () => {
                 const isSelected = selectedCaseId === item.id;
                 const riskAmount = (item.amount_at_risk / 100).toLocaleString('en-IN');
                 const initials = item.id.slice(0, 2).toUpperCase();
+                const isDetected = item.status === 'DETECTED' || item.status === 'send_whatsapp';
+                const displayTag = isDetected ? 'WhatsApp' : item.status;
                 const statusColor =
-                  item.status === 'DETECTED'      ? { dot: 'bg-rose-400', glow: 'shadow-[0_0_8px_rgba(251,113,133,0.5)]', bar: 'bg-rose-400', text: 'text-rose-300', badge: 'bg-rose-400/10 border-rose-400/20' } :
+                  isDetected                      ? { dot: 'bg-emerald-400', glow: 'shadow-[0_0_8px_rgba(52,211,153,0.5)]', bar: 'bg-emerald-400', text: 'text-emerald-300', badge: 'bg-emerald-400/10 border-emerald-400/20' } :
                   item.status === 'In Progress'   ? { dot: 'bg-cyan-400',  glow: 'shadow-[0_0_8px_rgba(34,211,238,0.5)]',  bar: 'bg-cyan-400',  text: 'text-cyan-300',  badge: 'bg-cyan-400/10 border-cyan-400/20'  } :
                   item.status === 'Pending Review'? { dot: 'bg-amber-400', glow: 'shadow-[0_0_8px_rgba(251,191,36,0.5)]',  bar: 'bg-amber-400', text: 'text-amber-300', badge: 'bg-amber-400/10 border-amber-400/20' } :
-                                                   { dot: 'bg-emerald-400',glow: 'shadow-[0_0_8px_rgba(52,211,153,0.5)]', bar: 'bg-emerald-400',text: 'text-emerald-300',badge: 'bg-emerald-400/10 border-emerald-400/20'};
+                                                   { dot: 'bg-rose-400',glow: 'shadow-[0_0_8px_rgba(251,113,133,0.5)]', bar: 'bg-rose-400',text: 'text-rose-300',badge: 'bg-rose-400/10 border-rose-400/20'};
 
                 return (
                   <div
@@ -86,7 +88,7 @@ export const Workspace = () => {
                       <div className="flex items-center justify-between mb-1">
                         <div className={`flex items-center gap-1.5 text-[10.5px] font-semibold border rounded-full px-2 py-[1px] ${statusColor.text} ${statusColor.badge}`}>
                           <div className={`w-1.5 h-1.5 rounded-full ${statusColor.dot} ${statusColor.glow}`} />
-                          {item.status}
+                          {displayTag}
                         </div>
                         <span className="text-[10px] text-slate-600 font-medium">
                           {new Date(item.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
