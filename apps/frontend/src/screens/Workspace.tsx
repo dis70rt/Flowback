@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useCases, useCaseDetails, useCustomer, useApproveAction, useRejectAction } from '../hooks/useApi';
-import { SmsAppMockup, WhatsAppAppMockup } from '@/components/mockups';
+import { SmsAppMockup, WhatsAppAppMockup, EmailAppMockup } from '@/components/mockups';
 import { useLiveActions } from '../hooks/useLiveActions';
 import { useUnifiedQueue } from '../hooks/useUnifiedQueue';
 import { QueueItem } from '../components/workspace/QueueItem';
@@ -118,7 +118,7 @@ const SelectedCaseView = ({ caseId }: { caseId: string }) => {
         {pendingAction ? (
           <>
             <div className="w-full max-w-[380px] flex flex-col mb-4 gap-1 shrink-0">
-              <div className="text-[10px] uppercase tracking-widest text-slate-500 font-semibold">{pendingAction?.channel?.String === 'send_sms' ? 'SMS / iMessage' : 'WhatsApp'}</div>
+              <div className="text-[10px] uppercase tracking-widest text-slate-500 font-semibold">{pendingAction?.channel?.String === 'send_sms' ? 'SMS / iMessage' : pendingAction?.channel?.String === 'send_email' ? 'Email (Gmail)' : 'WhatsApp'}</div>
               <div className="flex justify-between items-center">
                 <span className="text-sm font-medium text-slate-200 tracking-wide">AI RECOVERY DRAFT</span>
                 <span className="text-[10px] text-emerald-200/70 font-medium tracking-wider flex items-center gap-1.5 bg-emerald-900/20 px-2 py-0.5 rounded-full border border-emerald-800/30">
@@ -207,6 +207,8 @@ const SelectedCaseView = ({ caseId }: { caseId: string }) => {
                   </div>
                   {pendingAction?.channel?.String === "send_sms" ? (
                     <SmsAppMockup customer={customer} pendingAction={pendingAction} />
+                  ) : pendingAction?.channel?.String === "send_email" ? (
+                    <EmailAppMockup customer={customer} pendingAction={pendingAction} />
                   ) : (
                     <WhatsAppAppMockup customer={customer} pendingAction={pendingAction} />
                   )}

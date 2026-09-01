@@ -36,3 +36,16 @@ export const parseDraftBody = (bodyObj: any) => {
     return rawString;
   }
 };
+
+export const formatEmailText = (text: string) => {
+  if (!text) return null;
+  const escapeHtml = (str: string) => {
+    const map: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' };
+    return str.replace(/[&<>'"]/g, (tag) => map[tag] || tag);
+  };
+  let html = escapeHtml(text);
+  const paymentLinkHtml = `<a href="#" class="text-[#8ab4f8] underline decoration-[#8ab4f8]/30 cursor-pointer break-all">https://rzp.io/i/fB9x2pL</a>`;
+  html = html.replace(/\[PAYMENT_LINK\]/g, paymentLinkHtml);
+  html = html.replace(/\n/g, '<br />');
+  return <span dangerouslySetInnerHTML={{ __html: html }} />;
+};
