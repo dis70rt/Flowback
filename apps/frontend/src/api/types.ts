@@ -55,6 +55,14 @@ export interface Customer {
   reliability_score: number;
 }
 
+export interface NullRawMessage {
+  RawMessage: {
+    body?: string;
+    subject?: string;
+  };
+  Valid: boolean;
+}
+
 export interface RecoveryAction {
   id: string;
   recovery_case_id: string;
@@ -62,8 +70,7 @@ export interface RecoveryAction {
   channel: NullString;
   ai_reasoning: NullString;
   status: string;
-  draft_subject: NullString;
-  draft_body: NullString;
+  draft_payload: NullRawMessage;
   created_at: string;
 }
 
