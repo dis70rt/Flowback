@@ -58,16 +58,23 @@ func saveAndPublish(ctx agent.Context, draft any, audioURL string, queries *repo
 	internalUUIDVal, _ := ctx.State().Get("internal_customer_uuid")
 	internalUUID, _ := internalUUIDVal.(uuid.NullUUID)
 
-	// DB Operation 1: Create Recovery Case
-	caseID, err := queries.CreateRecoveryCase(ctx, repo.CreateRecoveryCaseParams{
-		CustomerID:     internalUUID,
-		SubscriptionID: subscriptionID,
-		PaymentID:      sql.NullString{String: paymentID, Valid: true},
-		AmountAtRisk:   amount,
-		Currency:       "INR",
-	})
-	if err != nil {
-		log.Printf("ERROR creating recovery case: %v", err)
+	// DB Operation 1: Find or Create Recovery Case
+	activeCase, err := queries.GetActiveCaseBySubscription(ctx, subscriptionID)
+	var caseID uuid.UUID
+	
+	if err == nil {
+		caseID = activeCase.ID // Append to existing case
+	} else {
+		caseID, err = queries.CreateRecoveryCase(ctx, repo.CreateRecoveryCaseParams{
+			CustomerID:     internalUUID,
+			SubscriptionID: subscriptionID,
+			PaymentID:      sql.NullString{String: paymentID, Valid: true},
+			AmountAtRisk:   amount,
+			Currency:       "INR",
+		})
+		if err != nil {
+			log.Printf("ERROR creating recovery case: %v", err)
+		}
 	}
 
 	// DB Operation 2: Create Recovery Action

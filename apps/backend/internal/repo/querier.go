@@ -19,7 +19,7 @@ type Querier interface {
 	GetActionByIdempotencyKey(ctx context.Context, idempotencyKey string) (GetActionByIdempotencyKeyRow, error)
 	GetActionsByCase(ctx context.Context, recoveryCaseID uuid.UUID) ([]GetActionsByCaseRow, error)
 	GetActiveCaseBySubscription(ctx context.Context, subscriptionID string) (GetActiveCaseBySubscriptionRow, error)
-	GetCommunicationHistory(ctx context.Context, razorpayCustomerID sql.NullString) ([]GetCommunicationHistoryRow, error)
+	GetCommunicationHistory(ctx context.Context, razorpayCustomerID sql.NullString) ([]CommunicationHistory, error)
 	GetCustomerByEmailOrPhone(ctx context.Context, arg GetCustomerByEmailOrPhoneParams) (uuid.UUID, error)
 	GetCustomerByID(ctx context.Context, id uuid.UUID) (Customer, error)
 	GetCustomerProfile(ctx context.Context, razorpayCustomerID sql.NullString) (GetCustomerProfileRow, error)
