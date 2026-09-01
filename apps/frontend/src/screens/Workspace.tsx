@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Check, Edit2, Phone, Mail, MapPin } from 'lucide-react';
+import { Check, Edit2, Phone, Mail, MapPin, ChevronDown, ChevronUp } from 'lucide-react';
 
 export const Workspace = () => {
   const { actions } = useLiveActions();
@@ -87,6 +87,7 @@ const SelectedCaseView = ({ caseId }: { caseId: string }) => {
   const approveAction = useApproveAction();
   const rejectAction = useRejectAction();
 
+  const [isAiReasoningOpen, setIsAiReasoningOpen] = useState(false);
   const pendingAction = caseDetails?.actions?.find(a => a.status === 'PENDING' || a.status === 'PENDING_APPROVAL');
 
   if (isPending) {
@@ -252,27 +253,33 @@ const SelectedCaseView = ({ caseId }: { caseId: string }) => {
                 Action Required
               </h3>
               
-              <div className="flex gap-2 mb-4">
+              <div className="flex flex-col gap-2 mb-2">
                 <Button 
-                  className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm"
+                  size="default"
+                  className="w-full h-10 px-4 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-all shadow-emerald-900/20"
                   onClick={() => approveAction.mutate(pendingAction.id)}
                   disabled={approveAction.isPending}
                 >
-                  <Check className="w-4 h-4 mr-2" /> Approve & Send
+                  <Check className="mr-2 w-4 h-4" /> Approve & Send
                 </Button>
-                <Button 
-                  variant="outline"
-                  className="px-3 border-slate-700 hover:bg-slate-800 text-slate-300"
-                  onClick={() => rejectAction.mutate(pendingAction.id)}
-                  disabled={rejectAction.isPending}
-                >
-                  <Edit2 className="w-4 h-4" />
-                </Button>
-              </div>
-
-              <div className="text-[11px] text-slate-400 leading-relaxed border-t border-indigo-500/10 pt-4">
-                <span className="font-semibold text-indigo-300/80 mr-1">AI Reasoning:</span>
-                {pendingAction.ai_reasoning?.String || 'Determined best time and channel to reach out based on previous successful recoveries.'}
+                
+                <div className="flex w-full gap-2">
+                  <Button 
+                    size="default"
+                    className="flex-1 h-10 px-4 shadow-sm transition-all bg-rose-600 hover:bg-rose-700 text-white"
+                    onClick={() => rejectAction.mutate(pendingAction.id)}
+                    disabled={rejectAction.isPending}
+                  >
+                    Reject
+                  </Button>
+                  <Button 
+                    size="default"
+                    className="shrink-0 h-10 px-4 shadow-sm transition-all bg-slate-800 hover:bg-slate-700 text-slate-200"
+                    title="Edit Draft"
+                  >
+                    <Edit2 className="w-4 h-4 mr-2" /> Edit
+                  </Button>
+                </div>
               </div>
             </div>
           )}
@@ -355,6 +362,32 @@ const SelectedCaseView = ({ caseId }: { caseId: string }) => {
                 <span className="text-slate-300">{caseDetails?.case?.created_at ? new Date(caseDetails.case.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'N/A'}</span>
               </div>
             </div>
+
+            {/* AI Reasoning Expandable Section */}
+            {pendingAction?.ai_reasoning?.Valid && (
+              <div className="mt-4 pt-4 border-t border-slate-800/60">
+                <button 
+                  onClick={() => setIsAiReasoningOpen(!isAiReasoningOpen)}
+                  className="flex items-center justify-between w-full text-left focus:outline-none"
+                >
+                  <span className="text-[10px] text-indigo-400 uppercase font-bold tracking-widest flex items-center gap-1.5">
+                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-400" /> AI Reasoning
+                  </span>
+                  {isAiReasoningOpen ? <ChevronUp className="w-3.5 h-3.5 text-slate-500" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-500" />}
+                </button>
+                
+                {isAiReasoningOpen && (
+                  <div className="mt-3 text-[11.5px] text-slate-300/90 leading-relaxed bg-black/20 p-3.5 rounded-lg border border-slate-800/60 shadow-inner">
+                    {pendingAction.ai_reasoning.String.split(/(ROOT CAUSE:|CONTEXT VIA TOOLS:|DECISION & COMPLIANCE:|NEXT STEP:|ACTION:|TIMING:|AUDIT:)/).map((part, i) => {
+                       if (/(ROOT CAUSE:|CONTEXT VIA TOOLS:|DECISION & COMPLIANCE:|NEXT STEP:|ACTION:|TIMING:|AUDIT:)/.test(part)) {
+                         return <div key={i} className="font-bold text-indigo-300 mt-2.5 mb-1 first:mt-0 tracking-wide text-[10px]">{part}</div>
+                       }
+                       return <span key={i}>{part}</span>
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
         </div>
