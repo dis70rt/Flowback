@@ -21,7 +21,7 @@ export const formatSmsText = (text: string) => {
     return str.replace(/[&<>'"]/g, (tag) => map[tag] || tag);
   };
   let html = escapeHtml(text);
-  const paymentLinkHtml = `<a href="#" class="text-[#0a84ff] underline underline-offset-2 cursor-pointer break-all">https://rzp.io/i/fB9x2pL</a>`;
+  const paymentLinkHtml = `<a href="#" class="text-white underline underline-offset-2 cursor-pointer break-all">https://rzp.io/i/fB9x2pL</a>`;
   html = html.replace(/\[PAYMENT_LINK\]/g, paymentLinkHtml);
   return <span dangerouslySetInnerHTML={{ __html: html }} />;
 };
