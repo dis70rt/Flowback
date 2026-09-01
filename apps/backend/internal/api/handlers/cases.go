@@ -27,11 +27,14 @@ func NewCaseHandler(q *repo.Queries, rzpClient *razorpay.Client) *CaseHandler {
 }
 
 type CaseItemDTO struct {
-	ID             string    `json:"id"`
-	SubscriptionID string    `json:"subscription_id"`
-	AmountAtRisk   int64     `json:"amount_at_risk"`
-	Status         string    `json:"status"`
-	CreatedAt      time.Time `json:"created_at"`
+	ID                  string         `json:"id"`
+	SubscriptionID      string         `json:"subscription_id"`
+	AmountAtRisk        int64          `json:"amount_at_risk"`
+	Status              string         `json:"status"`
+	CreatedAt           time.Time      `json:"created_at"`
+	LatestActionType    sql.NullString `json:"latest_action_type"`
+	LatestActionStatus  sql.NullString `json:"latest_action_status"`
+	LatestActionChannel sql.NullString `json:"latest_action_channel"`
 }
 
 type ListCasesResponse struct {
@@ -47,31 +50,57 @@ type EditDraftRequest struct {
 func (h *CaseHandler) ListCases(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
+	filter := c.DefaultQuery("filter", "all")
 	
 	if page < 1 { page = 1 }
 	if limit < 1 || limit > 100 { limit = 20 }
 	
 	offset := (page - 1) * limit
 
-	dbCases, err := h.queries.ListRecoveryCases(c.Request.Context(), repo.ListRecoveryCasesParams{
-		Limit:  int32(limit),
-		Offset: int32(offset),
-	})
-	
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch cases"})
-		return
-	}
-
 	var dtos []CaseItemDTO
-	for _, row := range dbCases {
-		dtos = append(dtos, CaseItemDTO{
-			ID:             row.ID.String(),
-			SubscriptionID: row.SubscriptionID,
-			AmountAtRisk:   row.AmountAtRisk,
-			Status:         string(row.Status),
-			CreatedAt:      row.CreatedAt,
+	
+	if filter == "pending" {
+		dbCases, err := h.queries.ListPendingCases(c.Request.Context(), repo.ListPendingCasesParams{
+			Limit:  int32(limit),
+			Offset: int32(offset),
 		})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch pending cases"})
+			return
+		}
+		for _, row := range dbCases {
+			dtos = append(dtos, CaseItemDTO{
+				ID:                  row.ID.String(),
+				SubscriptionID:      row.SubscriptionID,
+				AmountAtRisk:        row.AmountAtRisk,
+				Status:              string(row.Status),
+				CreatedAt:           row.CreatedAt,
+				LatestActionType:    sql.NullString{String: string(row.LatestActionType), Valid: string(row.LatestActionType) != ""},
+				LatestActionStatus:  sql.NullString{String: string(row.LatestActionStatus), Valid: string(row.LatestActionStatus) != ""},
+				LatestActionChannel: row.LatestActionChannel,
+			})
+		}
+	} else {
+		dbCases, err := h.queries.ListRecoveryCases(c.Request.Context(), repo.ListRecoveryCasesParams{
+			Limit:  int32(limit),
+			Offset: int32(offset),
+		})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch cases"})
+			return
+		}
+		for _, row := range dbCases {
+			dtos = append(dtos, CaseItemDTO{
+				ID:                  row.ID.String(),
+				SubscriptionID:      row.SubscriptionID,
+				AmountAtRisk:        row.AmountAtRisk,
+				Status:              string(row.Status),
+				CreatedAt:           row.CreatedAt,
+				LatestActionType:    sql.NullString{String: string(row.LatestActionType), Valid: string(row.LatestActionType) != ""},
+				LatestActionStatus:  sql.NullString{String: string(row.LatestActionStatus), Valid: string(row.LatestActionStatus) != ""},
+				LatestActionChannel: row.LatestActionChannel,
+			})
+		}
 	}
 	
 	c.JSON(http.StatusOK, ListCasesResponse{
@@ -194,4 +223,29 @@ func (h *CaseHandler) RejectDraft(c *gin.Context) {
 	}
 	
 	c.JSON(http.StatusOK, gin.H{"status": "rejected"})
+}
+
+func (h *CaseHandler) GetCaseSummary(c *gin.Context) {
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid uuid"})
+		return
+	}
+
+	row, err := h.queries.GetCaseSummary(c.Request.Context(), id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "case not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, CaseItemDTO{
+		ID:                  row.ID.String(),
+		SubscriptionID:      row.SubscriptionID,
+		AmountAtRisk:        row.AmountAtRisk,
+		Status:              string(row.Status),
+		CreatedAt:           row.CreatedAt,
+		LatestActionType:    sql.NullString{String: string(row.LatestActionType), Valid: string(row.LatestActionType) != ""},
+		LatestActionStatus:  sql.NullString{String: string(row.LatestActionStatus), Valid: string(row.LatestActionStatus) != ""},
+		LatestActionChannel: row.LatestActionChannel,
+	})
 }

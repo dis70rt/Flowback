@@ -266,6 +266,12 @@ components:
         created_at:
           type: string
           format: date-time
+        latest_action_type:
+          $ref: '#/components/schemas/NullString'
+        latest_action_status:
+          $ref: '#/components/schemas/NullString'
+        latest_action_channel:
+          $ref: '#/components/schemas/NullString'
     EditDraftRequest:
       type: object
       required:

@@ -19,6 +19,7 @@ type Querier interface {
 	GetActionByIdempotencyKey(ctx context.Context, idempotencyKey string) (GetActionByIdempotencyKeyRow, error)
 	GetActionsByCase(ctx context.Context, recoveryCaseID uuid.UUID) ([]GetActionsByCaseRow, error)
 	GetActiveCaseBySubscription(ctx context.Context, subscriptionID string) (GetActiveCaseBySubscriptionRow, error)
+	GetCaseSummary(ctx context.Context, id uuid.UUID) (GetCaseSummaryRow, error)
 	GetCommunicationHistory(ctx context.Context, razorpayCustomerID sql.NullString) ([]CommunicationHistory, error)
 	GetCustomerByEmailOrPhone(ctx context.Context, arg GetCustomerByEmailOrPhoneParams) (uuid.UUID, error)
 	GetCustomerByID(ctx context.Context, id uuid.UUID) (Customer, error)
@@ -30,7 +31,8 @@ type Querier interface {
 	InsertAuditLog(ctx context.Context, arg InsertAuditLogParams) error
 	InsertCommunicationHistory(ctx context.Context, arg InsertCommunicationHistoryParams) (uuid.UUID, error)
 	InsertCustomer(ctx context.Context, arg InsertCustomerParams) (uuid.UUID, error)
-	ListRecoveryCases(ctx context.Context, arg ListRecoveryCasesParams) ([]RecoveryCase, error)
+	ListPendingCases(ctx context.Context, arg ListPendingCasesParams) ([]ListPendingCasesRow, error)
+	ListRecoveryCases(ctx context.Context, arg ListRecoveryCasesParams) ([]ListRecoveryCasesRow, error)
 	LogWebhookEvent(ctx context.Context, arg LogWebhookEventParams) error
 	MarkActionExecuted(ctx context.Context, arg MarkActionExecutedParams) error
 	RejectAction(ctx context.Context, arg RejectActionParams) error

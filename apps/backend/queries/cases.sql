@@ -41,6 +41,52 @@ SET status = 'RECOVERED', amount_recovered = $2, recovered_at = NOW(), updated_a
 WHERE id = $1;
 
 -- name: ListRecoveryCases :many
-SELECT * FROM recovery_cases
-ORDER BY created_at DESC
+SELECT c.*, 
+       a.action_type AS latest_action_type, 
+       a.status AS latest_action_status,
+       a.channel AS latest_action_channel
+FROM recovery_cases c
+LEFT JOIN LATERAL (
+    SELECT action_type, status, channel
+    FROM recovery_actions
+    WHERE recovery_case_id = c.id
+    ORDER BY created_at DESC
+    LIMIT 1
+) a ON true
+ORDER BY c.created_at DESC
 LIMIT $1 OFFSET $2;
+
+-- name: ListPendingCases :many
+SELECT c.*, 
+       a.action_type AS latest_action_type, 
+       a.status AS latest_action_status,
+       a.channel AS latest_action_channel
+FROM recovery_cases c
+JOIN LATERAL (
+    SELECT action_type, status, channel
+    FROM recovery_actions
+    WHERE recovery_case_id = c.id
+    ORDER BY created_at DESC
+    LIMIT 1
+) a ON true
+WHERE EXISTS (
+    SELECT 1 FROM recovery_actions ra 
+    WHERE ra.recovery_case_id = c.id AND ra.status = 'PENDING_APPROVAL'
+)
+ORDER BY c.created_at DESC
+LIMIT $1 OFFSET $2;
+
+-- name: GetCaseSummary :one
+SELECT c.*, 
+       a.action_type AS latest_action_type, 
+       a.status AS latest_action_status,
+       a.channel AS latest_action_channel
+FROM recovery_cases c
+LEFT JOIN LATERAL (
+    SELECT action_type, status, channel
+    FROM recovery_actions
+    WHERE recovery_case_id = c.id
+    ORDER BY created_at DESC
+    LIMIT 1
+) a ON true
+WHERE c.id = $1 LIMIT 1;

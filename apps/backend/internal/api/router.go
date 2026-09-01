@@ -81,6 +81,7 @@ func NewRouter(deps RouterDeps) *gin.Engine {
 		caseHandler := handlers.NewCaseHandler(deps.Queries, deps.RazorpayClient)
 		apiGroup.GET("/cases", caseHandler.ListCases)
 		apiGroup.GET("/cases/:id", caseHandler.GetCase)
+		apiGroup.GET("/cases/:id/summary", caseHandler.GetCaseSummary)
 		apiGroup.POST("/cases/:id/approve", caseHandler.ApproveDraft)
 		apiGroup.PUT("/cases/:id/draft", caseHandler.EditDraft)
 		apiGroup.POST("/cases/:id/reject", caseHandler.RejectDraft)
