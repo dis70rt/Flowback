@@ -3,6 +3,7 @@ package tools
 import (
 	"database/sql"
 	"fmt"
+	"log/slog"
 
 	"github.com/dis70rt/flowback/internal/repo"
 	"google.golang.org/adk/v2/agent"
@@ -33,13 +34,15 @@ func NewGetCustomerTool(queries *repo.Queries) (tool.Tool, error) {
 			Description: "Fetches the customer's LTV, tenure, location, and preferred channel.",
 		},
 		func(ctx agent.Context, input GetCustomerInput) (*CustomerOutput, error) {
+			slog.InfoContext(ctx, "tool called: get_customer_profile", "razorpay_customer_id", input.RazorpayCustomerID)
 			param := sql.NullString{String: input.RazorpayCustomerID, Valid: true}
 			profile, err := queries.GetCustomerProfile(ctx, param)
 			if err != nil {
+				slog.WarnContext(ctx, "customer profile not found", "razorpay_customer_id", input.RazorpayCustomerID, "error", err)
 				return nil, fmt.Errorf("failed to fetch customer: %v", err)
 			}
 
-			return &CustomerOutput{
+			out := &CustomerOutput{
 				RazorpayCustomerID: profile.RazorpayCustomerID.String,
 				Name:               profile.Name.String,
 				ValueTier:          profile.ValueTier.String,
@@ -49,7 +52,16 @@ func NewGetCustomerTool(queries *repo.Queries) (tool.Tool, error) {
 				State:              profile.State.String,
 				FailedPayments:     profile.FailedPayments,
 				ReliabilityScore:   profile.ReliabilityScore,
-			}, nil
+			}
+			slog.InfoContext(ctx, "customer profile fetched",
+				"name", out.Name,
+				"tier", out.ValueTier,
+				"preferred_channel", out.PreferredChannel,
+				"failed_payments", out.FailedPayments,
+				"reliability_score", out.ReliabilityScore,
+				"city", out.City,
+			)
+			return out, nil
 		},
 	)
 }

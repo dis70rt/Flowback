@@ -19,6 +19,9 @@ export interface CaseItemDTO {
   amount_at_risk: number;
   status: string;
   created_at: string;
+  latest_action_type: NullString;
+  latest_action_status: NullString;
+  latest_action_channel: NullString;
 }
 
 export interface ListCasesResponse {
@@ -52,14 +55,22 @@ export interface Customer {
   reliability_score: number;
 }
 
+export interface NullRawMessage {
+  RawMessage: {
+    body?: string;
+    subject?: string;
+  };
+  Valid: boolean;
+}
+
 export interface RecoveryAction {
   id: string;
   recovery_case_id: string;
   action_type: string;
   channel: NullString;
+  ai_reasoning: NullString;
   status: string;
-  draft_subject: NullString;
-  draft_body: NullString;
+  draft_payload: NullRawMessage;
   created_at: string;
 }
 
@@ -85,4 +96,7 @@ export interface CommunicationHistory {
   status: string;
   message_sid: NullString;
   sent_at: string;
+  delivered_at: NullTime;
+  opened_at: NullTime;
+  clicked_at: NullTime;
 }

@@ -1,5 +1,5 @@
 import { Camera, ChevronLeft, ChevronRight, Mic } from 'lucide-react';
-import { formatSmsText, parseDraftBody } from './utils';
+import { formatSmsText } from './utils';
 
 export const SmsMockup = ({ customer, pendingAction }: any) => {
   return (
@@ -37,7 +37,7 @@ export const SmsMockup = ({ customer, pendingAction }: any) => {
         <div className="self-end max-w-[75%] flex flex-col items-end">
           <div className="relative text-white px-3.5 py-2 rounded-[18px] rounded-br-sm shadow-sm" style={{ backgroundColor: '#0a84ff' }}>
             <p className="text-[14.5px] leading-[1.35] whitespace-pre-wrap break-words">
-              {formatSmsText(parseDraftBody(pendingAction?.draft_body))}
+              {formatSmsText(pendingAction?.draft_payload?.RawMessage?.body || "")}
             </p>
             <svg className="absolute bottom-0 -right-[5px] text-[#0a84ff]" width="14" height="18" viewBox="0 0 14 18" fill="none">
                <path d="M0 18C4 18 8 16 10 11C10 14 12 17 14 18H0Z" fill="currentColor"/>

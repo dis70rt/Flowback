@@ -1,5 +1,5 @@
 import { ArrowLeft, MoreVertical, Phone, Video, Smile, Paperclip, Mic, Camera } from 'lucide-react';
-import { formatWhatsAppText, parseDraftBody } from './utils';
+import { formatWhatsAppText } from './utils';
 
 export const WhatsAppMockup = ({ customer, pendingAction }: any) => {
   return (
@@ -53,7 +53,7 @@ export const WhatsAppMockup = ({ customer, pendingAction }: any) => {
               <path fill="currentColor" d="M5.188 0H0v11.193l6.467-8.625C7.526 1.156 6.958 0 5.188 0z" />
             </svg>
             <p className="text-[13.5px] leading-[1.45] whitespace-pre-wrap break-words">
-              {formatWhatsAppText(parseDraftBody(pendingAction?.draft_body))}
+              {formatWhatsAppText(pendingAction?.draft_payload?.RawMessage?.body || "")}
             </p>
             <div className="flex items-center justify-end mt-0.5">
               <span className="text-[#8696a0] text-[10.5px]">9:41 AM</span>

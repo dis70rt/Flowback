@@ -13,7 +13,7 @@ export const WorkspaceLayout = () => {
         <aside className="w-64 border-r border-slate-800 flex flex-col shrink-0">
           <div className="p-4 flex flex-col gap-6 flex-1">
             <div className="flex items-center gap-2 px-2 mt-2">
-              <div className="w-8 h-8 bg-purple-900/50 text-purple-300 border border-purple-500/30 rounded flex items-center justify-center font-bold">F</div>
+              <img src="/logo.png" alt="FlowBack Logo" className="w-8 h-8 object-contain" />
               <h1 className="font-semibold text-lg tracking-tight">FlowBack</h1>
             </div>
 
