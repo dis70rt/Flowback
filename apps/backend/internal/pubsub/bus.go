@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -25,7 +25,6 @@ type Bus interface {
 	Subscriber
 	Close() error
 }
-
 
 type redisBus struct {
 	client *redis.Client
@@ -65,24 +64,24 @@ func (b *redisBus) Subscribe(ctx context.Context, channel string, handler Messag
 		sub := b.client.Subscribe(ctx, channel)
 		defer func() {
 			if err := sub.Close(); err != nil {
-				log.Printf("[PUBSUB] Error closing subscription for channel %q: %v\n", channel, err)
+				slog.ErrorContext(ctx, "error closing pubsub subscription", "channel", channel, "error", err)
 			}
 		}()
 
-		log.Printf("[PUBSUB] Subscribed -> channel=%q\n", channel)
+		slog.InfoContext(ctx, "subscribed to pubsub channel", "channel", channel)
 
 		ch := sub.Channel()
 		for {
 			select {
 			case msg, ok := <-ch:
 				if !ok {
-					log.Printf("[PUBSUB] Channel closed -> channel=%q\n", channel)
+					slog.InfoContext(ctx, "pubsub channel closed", "channel", channel)
 					return
 				}
 				handler(ctx, []byte(msg.Payload))
 
 			case <-ctx.Done():
-				log.Printf("[PUBSUB] Context cancelled -> unsubscribing from channel=%q\n", channel)
+				slog.InfoContext(ctx, "context cancelled, unsubscribing from pubsub", "channel", channel)
 				return
 			}
 		}

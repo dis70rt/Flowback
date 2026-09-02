@@ -1,14 +1,13 @@
 package nodes
 
 import (
+	"github.com/dis70rt/flowback/internal/agent/core"
+	"github.com/dis70rt/flowback/internal/agent/tools"
+	"github.com/dis70rt/flowback/internal/repo"
 	"google.golang.org/adk/v2/agent"
 	"google.golang.org/adk/v2/tool"
 	"google.golang.org/genai"
-	"github.com/dis70rt/flowback/internal/agent/core"
-	"github.com/dis70rt/flowback/internal/repo"
-	"github.com/dis70rt/flowback/internal/agent/tools"
 )
-
 
 // strategySchema is the genai.Schema enforced on the LLM's response.
 var strategySchema = &genai.Schema{
@@ -18,9 +17,9 @@ var strategySchema = &genai.Schema{
 			Type: genai.TypeString,
 			Enum: []string{"silent_retry", "send_email", "send_sms", "send_whatsapp", "create_payment_link", "send_call"},
 		},
-		"delay_hours": {Type: genai.TypeInteger},
+		"delay_hours":         {Type: genai.TypeInteger},
 		"discount_percentage": {Type: genai.TypeInteger},
-		"reasoning":   {Type: genai.TypeString},
+		"reasoning":           {Type: genai.TypeString},
 		"confidence": {
 			Type: genai.TypeNumber,
 		},

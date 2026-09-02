@@ -1,23 +1,35 @@
 package main
 
 import (
-	"log"
+	"context"
+	"log/slog"
+	"os"
 
 	"github.com/dis70rt/flowback/internal/api"
 	"github.com/dis70rt/flowback/internal/config"
 	"github.com/dis70rt/flowback/internal/database"
 	"github.com/dis70rt/flowback/internal/events"
 	"github.com/dis70rt/flowback/internal/pubsub"
-	"github.com/dis70rt/flowback/internal/repo"
 	"github.com/dis70rt/flowback/internal/razorpay"
+	"github.com/dis70rt/flowback/internal/repo"
+	"github.com/dis70rt/flowback/internal/telemetry"
 )
 
 func main() {
 	cfg := config.Load()
-	
+
+	ctx := context.Background()
+	shutdown, err := telemetry.Init(ctx, "flowback-api", os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT"))
+	if err != nil {
+		slog.Error("failed to init telemetry", "error", err)
+	} else {
+		defer shutdown(ctx)
+	}
+
 	db, err := database.InitDB(cfg.DatabaseURL)
 	if err != nil {
-		log.Fatalf("FATAL: %v", err)
+		slog.Error("failed to connect to database", "error", err)
+		os.Exit(1)
 	}
 	defer db.Close()
 
@@ -29,7 +41,8 @@ func main() {
 
 	bus, err := pubsub.New(cfg.RedisURL)
 	if err != nil {
-		log.Fatalf("FATAL: failed to init pubsub: %v", err)
+		slog.Error("failed to init pubsub", "error", err)
+		os.Exit(1)
 	}
 	defer bus.Close()
 
@@ -43,8 +56,9 @@ func main() {
 		RazorpayClient: rzpClient,
 	})
 
-	log.Println("STARTING: Flowback Backend listening on port 8080...")
+	slog.Info("starting flowback api server", "port", 8080)
 	if err := router.Run(":8080"); err != nil {
-		log.Fatal(err)
+		slog.Error("api server exited", "error", err)
+		os.Exit(1)
 	}
 }

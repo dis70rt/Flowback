@@ -28,10 +28,10 @@ func (t *FailedCardTask) Execute(client *razorpay.Client, keyID string) {
 	log.Printf("Starting Task: Failed Card Payment (Customer: %s, Amount: %d paise)\n", t.CustomerID, t.AmountPaise)
 
 	data := map[string]interface{}{
-		"amount":   t.AmountPaise,
-		"currency": "INR",
+		"amount":      t.AmountPaise,
+		"currency":    "INR",
 		"customer_id": t.CustomerID,
-		"receipt":  fmt.Sprintf("sim_card_%d", time.Now().Unix()),
+		"receipt":     fmt.Sprintf("sim_card_%d", time.Now().Unix()),
 	}
 
 	order, err := client.Order.Create(data, nil)
@@ -76,7 +76,7 @@ func executeAJAXPayment(formData url.Values) {
 
 	var res map[string]interface{}
 	if err := json.Unmarshal(body, &res); err == nil {
-		
+
 		if reqData, ok := res["request"].(map[string]interface{}); ok {
 			if authURL, ok := reqData["url"].(string); ok {
 				log.Printf("Action Required: Complete the OTP step at the link below to FAIL the payment:\n")

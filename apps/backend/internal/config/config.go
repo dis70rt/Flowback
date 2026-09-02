@@ -1,7 +1,7 @@
 package config
 
 import (
-	"log"
+	"log/slog"
 	"os"
 
 	"github.com/joho/godotenv"
@@ -16,6 +16,7 @@ type Config struct {
 	RedisURL          string
 	OpenRouterAPIKey  string
 	OpenRouterModel   string
+	TreeLog           bool // Controlled by FLOWBACK_TREE_LOG=true
 }
 
 func Load() *Config {
@@ -25,7 +26,7 @@ func Load() *Config {
 
 	webhookSecret := os.Getenv("RAZORPAY_WEBHOOK_SECRET")
 	if webhookSecret == "" {
-		log.Println("WARNING: RAZORPAY_WEBHOOK_SECRET is not set in .env")
+		slog.Info("WARNING: RAZORPAY_WEBHOOK_SECRET is not set in .env")
 	}
 
 	keyID := os.Getenv("RAZORPAY_KEY_ID")
@@ -45,12 +46,14 @@ func Load() *Config {
 
 	openRouterAPIKey := os.Getenv("OPENROUTER_API_KEY")
 	if openRouterAPIKey == "" {
-		log.Println("WARNING: OPENROUTER_API_KEY is not set in .env")
+		slog.Info("WARNING: OPENROUTER_API_KEY is not set in .env")
 	}
 	openRouterModel := os.Getenv("OPENROUTER_MODEL")
 	if openRouterModel == "" {
 		openRouterModel = "z-ai/glm-5.3-flash"
 	}
+
+	treeLog := os.Getenv("FLOWBACK_TREE_LOG") == "true"
 
 	return &Config{
 		RazorpaySecret:    webhookSecret,
@@ -61,5 +64,6 @@ func Load() *Config {
 		RedisURL:          redisURL,
 		OpenRouterAPIKey:  openRouterAPIKey,
 		OpenRouterModel:   openRouterModel,
+		TreeLog:           treeLog,
 	}
 }

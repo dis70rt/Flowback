@@ -3,7 +3,7 @@ package database
 import (
 	"database/sql"
 	"fmt"
-	"log"
+	"log/slog"
 
 	_ "github.com/lib/pq"
 	"github.com/pressly/goose/v3"
@@ -23,7 +23,7 @@ func InitDB(dsn string) (*sql.DB, error) {
 
 	// Tell goose to use our embedded SQL files from the migrations package
 	goose.SetBaseFS(migrations.FS)
-	
+
 	if err := goose.SetDialect("postgres"); err != nil {
 		return nil, fmt.Errorf("failed to set goose dialect: %w", err)
 	}
@@ -33,6 +33,6 @@ func InitDB(dsn string) (*sql.DB, error) {
 		return nil, fmt.Errorf("failed to apply migrations: %w", err)
 	}
 
-	log.Println("DATABASE: Connected and Migrations Applied!")
+	slog.Info("DATABASE: Connected and Migrations Applied!")
 	return db, nil
 }

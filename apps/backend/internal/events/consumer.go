@@ -2,7 +2,7 @@ package events
 
 import (
 	"context"
-	"log"
+	"log/slog"
 
 	"github.com/hibiken/asynq"
 )
@@ -33,10 +33,10 @@ func NewConsumer(redisAddr string, concurrency int) *Consumer {
 
 func (c *Consumer) Register(topic string, handler TaskHandler) {
 	c.mux.HandleFunc(topic, handler)
-	log.Printf("[CONSUMER] Registered handler for topic: %s\n", topic)
+	slog.Info("registered consumer handler", "topic", topic)
 }
 
 func (c *Consumer) Start() error {
-	log.Println("[CONSUMER] Starting background task consumption...")
+	slog.Info("[CONSUMER] Starting background task consumption...")
 	return c.server.Run(c.mux)
 }

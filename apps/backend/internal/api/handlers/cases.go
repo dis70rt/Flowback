@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"strconv"
 	"time"
-	
-	"github.com/dis70rt/flowback/internal/repo"
+
 	"github.com/dis70rt/flowback/internal/razorpay"
+	"github.com/dis70rt/flowback/internal/repo"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/sqlc-dev/pqtype"
@@ -51,14 +51,18 @@ func (h *CaseHandler) ListCases(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
 	filter := c.DefaultQuery("filter", "all")
-	
-	if page < 1 { page = 1 }
-	if limit < 1 || limit > 100 { limit = 20 }
-	
+
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 || limit > 100 {
+		limit = 20
+	}
+
 	offset := (page - 1) * limit
 
 	var dtos []CaseItemDTO
-	
+
 	if filter == "pending" {
 		dbCases, err := h.queries.ListPendingCases(c.Request.Context(), repo.ListPendingCasesParams{
 			Limit:  int32(limit),
@@ -102,7 +106,7 @@ func (h *CaseHandler) ListCases(c *gin.Context) {
 			})
 		}
 	}
-	
+
 	c.JSON(http.StatusOK, ListCasesResponse{
 		Page:  page,
 		Limit: limit,
@@ -116,7 +120,7 @@ func (h *CaseHandler) GetCase(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid case uuid"})
 		return
 	}
-	
+
 	caseData, err := h.queries.GetRecoveryCaseByID(c.Request.Context(), id)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "case not found"})
@@ -150,7 +154,7 @@ func (h *CaseHandler) ApproveDraft(c *gin.Context) {
 
 	amount := data.AmountAtRisk
 	if data.DiscountPercentage.Valid && data.DiscountPercentage.Int32 > 0 {
-		amount = amount * int64(100 - data.DiscountPercentage.Int32) / 100
+		amount = amount * int64(100-data.DiscountPercentage.Int32) / 100
 	}
 
 	linkID, linkURL, err := h.razorpayClient.CreatePaymentLink(amount, data.CaseID.String())
@@ -167,12 +171,12 @@ func (h *CaseHandler) ApproveDraft(c *gin.Context) {
 		PaymentLinkID:     sql.NullString{String: linkID, Valid: true},
 		PaymentLinkUrl:    sql.NullString{String: linkURL, Valid: true},
 	})
-	
+
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to approve action"})
 		return
 	}
-	
+
 	c.JSON(http.StatusOK, gin.H{"status": "approved", "payment_link_url": linkURL})
 }
 
@@ -216,12 +220,12 @@ func (h *CaseHandler) RejectDraft(c *gin.Context) {
 		ID:                actionID,
 		ApprovedByClerkID: mockClerkID,
 	})
-	
+
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to reject action"})
 		return
 	}
-	
+
 	c.JSON(http.StatusOK, gin.H{"status": "rejected"})
 }
 
