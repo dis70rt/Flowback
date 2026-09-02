@@ -39,7 +39,7 @@ If `customer_profile` is null (unknown customer):
 | send_whatsapp       | Customer `preferred_channel` = WHATSAPP. |
 | send_sms            | Customer `preferred_channel` = SMS. |
 | create_payment_link | Enterprise SLA escalation ONLY. Overrides preferred_channel rule. |
-| send_call           | HIGH-value customer with multiple prior failed contacts AND high churn risk. Last resort before escalation. |
+| send_call           | HIGH-value customer with multiple prior failed payments (e.g. `failed_payments` >= 4) AND high churn risk. Last resort before escalation. |
 
 *Note: `create_payment_link` is channel-agnostic — it does NOT correspond to any `preferred_channel` value. Only use it when the Enterprise SLA explicitly mandates it.*
 
