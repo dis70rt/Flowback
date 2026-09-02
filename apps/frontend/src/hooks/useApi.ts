@@ -1,5 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getMetrics, getCases, getCaseDetails, getCustomer, approveDraft, rejectDraft } from '../api/services';
+import { getMetrics, getCases, getCaseDetails, getCustomer, getCustomers, approveDraft, rejectDraft } from '../api/services';
+
+export const useCustomers = () => {
+  return useQuery({
+    queryKey: ['customers'],
+    queryFn: getCustomers,
+  });
+};
 
 export const useMetrics = () => {
   return useQuery({

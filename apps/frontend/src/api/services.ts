@@ -16,6 +16,11 @@ export const getCaseDetails = async (id: string): Promise<CaseDetailsResponse> =
   return data;
 };
 
+export const getCustomers = async (): Promise<Customer[]> => {
+  const { data } = await apiClient.get('/customers');
+  return data;
+};
+
 export const approveDraft = async (actionId: string) => {
   const { data } = await apiClient.post(`/cases/${actionId}/approve`);
   return data;

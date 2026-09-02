@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
-import { useCases, useCaseDetails, useCustomer, useCustomerPayments, useCustomerCommunications } from '../hooks/useApi';
+import { useCases, useCaseDetails, useCustomer, useCustomers, useCustomerPayments, useCustomerCommunications } from '../hooks/useApi';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Search, User, Mail, Phone, MapPin, CreditCard, MessageSquare, Clock, ShieldCheck, AlertCircle } from 'lucide-react';
+import { Search, User, Mail, Phone, MapPin, CreditCard, MessageSquare, Clock, ShieldCheck, AlertCircle, Users } from 'lucide-react';
 
 export const Customers = () => {
   const [searchInput, setSearchInput] = useState('');
   const [activeCustomerId, setActiveCustomerId] = useState<string | null>(null);
+
+  const { data: customersList, isPending: isLoadingCustomersList } = useCustomers();
 
   // Auto-select a customer for demo purposes if none is selected
   const { data: casesData } = useCases(1, 1);
@@ -14,10 +16,12 @@ export const Customers = () => {
   const { data: firstCaseDetails } = useCaseDetails(firstCaseId);
 
   useEffect(() => {
-    if (!activeCustomerId && firstCaseDetails?.case?.customer_id) {
+    if (!activeCustomerId && customersList && customersList.length > 0) {
+      setActiveCustomerId(customersList[0].id);
+    } else if (!activeCustomerId && firstCaseDetails?.case?.customer_id) {
       setActiveCustomerId(firstCaseDetails.case.customer_id);
     }
-  }, [firstCaseDetails, activeCustomerId]);
+  }, [firstCaseDetails, activeCustomerId, customersList]);
 
   const { data: customer, isPending: isLoadingCustomer } = useCustomer(activeCustomerId || undefined);
   const { data: payments, isPending: isLoadingPayments } = useCustomerPayments(activeCustomerId || undefined);
@@ -30,6 +34,11 @@ export const Customers = () => {
     }
   };
 
+  const filteredCustomers = customersList?.filter(c => 
+    c.name?.String?.toLowerCase().includes(searchInput.toLowerCase()) || 
+    c.email?.String?.toLowerCase().includes(searchInput.toLowerCase())
+  ) || [];
+
   return (
     <div className="flex h-full w-full bg-slate-950 flex-col overflow-hidden">
       {/* Header & Search */}
@@ -38,41 +47,81 @@ export const Customers = () => {
           <h1 className="text-2xl font-bold text-slate-100 tracking-tight">Customer Directory</h1>
           <p className="text-slate-500 text-sm mt-1">Search and manage customer profiles, payment history, and communications.</p>
         </div>
-        <form onSubmit={handleSearch} className="relative w-80">
+        <div className="relative w-96">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
           <input 
             type="text" 
-            placeholder="Search by Customer ID (UUID)..." 
+            placeholder="Search by name or email..."
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            className="w-full bg-slate-900 border border-slate-700/80 rounded-full py-2 pl-9 pr-4 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
+            className="w-full bg-slate-900/50 border border-slate-800/80 rounded-lg pl-10 pr-4 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/50 transition-all"
           />
-        </form>
+        </div>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-y-auto p-8">
+      <div className="flex-1 flex overflow-hidden">
+        {/* Customer List Sidebar */}
+        <div className="w-80 border-r border-slate-800/60 bg-slate-900/20 flex flex-col shrink-0">
+          <div className="p-4 border-b border-slate-800/40 text-xs font-semibold text-slate-500 uppercase tracking-wider sticky top-0 bg-slate-900/90 backdrop-blur z-10">
+            {filteredCustomers.length} Customers
+          </div>
+          <div className="flex-1 overflow-y-auto p-2 space-y-1">
+            {isLoadingCustomersList ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="p-3 rounded-lg flex gap-3">
+                  <Skeleton className="w-10 h-10 rounded-full bg-slate-800" />
+                  <div className="space-y-2 flex-1">
+                    <Skeleton className="h-4 w-24 bg-slate-800" />
+                    <Skeleton className="h-3 w-32 bg-slate-800/50" />
+                  </div>
+                </div>
+              ))
+            ) : filteredCustomers.map(c => (
+              <button
+                key={c.id}
+                onClick={() => setActiveCustomerId(c.id)}
+                className={`w-full text-left p-3 rounded-lg flex items-center gap-3 transition-colors ${
+                  activeCustomerId === c.id 
+                    ? 'bg-indigo-500/10 border border-indigo-500/20' 
+                    : 'hover:bg-slate-800/40 border border-transparent'
+                }`}
+              >
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
+                  activeCustomerId === c.id ? 'bg-indigo-500/20 text-indigo-400' : 'bg-slate-800 text-slate-400'
+                }`}>
+                  <User className="w-5 h-5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className={`font-medium text-sm truncate ${activeCustomerId === c.id ? 'text-indigo-200' : 'text-slate-300'}`}>
+                    {c.name?.String || 'Unknown Customer'}
+                  </div>
+                  <div className="text-xs text-slate-500 truncate mt-0.5">
+                    {c.email?.String || c.phone?.String || 'No contact info'}
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Customer Detail Content */}
+        <div className="flex-1 overflow-y-auto p-8">
         {!activeCustomerId ? (
           <div className="h-full flex flex-col items-center justify-center text-slate-500">
             <User className="w-12 h-12 mb-4 text-slate-700" />
             <h2 className="text-lg font-medium text-slate-300">No Customer Selected</h2>
             <p className="text-sm mt-1 text-slate-500 max-w-md text-center">
-              Enter a customer UUID in the search bar above to view their complete profile, payment history, and communication logs.
+              Select a customer from the sidebar to view their complete profile, payment history, and communication logs.
             </p>
           </div>
         ) : isLoadingCustomer ? (
           <div className="space-y-6">
-            <Skeleton className="h-48 w-full bg-slate-900/60 rounded-xl" />
+            <Skeleton className="h-48 w-full bg-slate-800/50 rounded-2xl" />
             <div className="grid grid-cols-2 gap-6">
-              <Skeleton className="h-64 bg-slate-900/60 rounded-xl" />
-              <Skeleton className="h-64 bg-slate-900/60 rounded-xl" />
+              <Skeleton className="h-64 w-full bg-slate-800/50 rounded-2xl" />
+              <Skeleton className="h-64 w-full bg-slate-800/50 rounded-2xl" />
             </div>
-          </div>
-        ) : !customer ? (
-          <div className="h-full flex flex-col items-center justify-center text-slate-500">
-            <AlertCircle className="w-12 h-12 mb-4 text-rose-500/50" />
-            <h2 className="text-lg font-medium text-slate-300">Customer Not Found</h2>
-            <p className="text-sm mt-1">Could not find a customer with ID {activeCustomerId}</p>
           </div>
         ) : (
           <div className="max-w-6xl mx-auto space-y-6 pb-12">
@@ -225,6 +274,7 @@ export const Customers = () => {
             </div>
           </div>
         )}
+        </div>
       </div>
     </div>
   );

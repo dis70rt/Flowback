@@ -321,6 +321,9 @@ const SelectedCaseView = ({ caseId }: { caseId: string }) => {
                   <div className="text-[10px] uppercase tracking-wider text-slate-500">Payments</div>
                   <div className="font-medium text-slate-300 text-sm mt-0.5">
                     {customer?.successful_payments || 0} <span className="text-slate-600 text-[11px]">/ {customer?.total_payments || 0}</span>
+                    {(customer?.failed_payments ?? 0) > 0 && (
+                      <span className="text-rose-400 ml-2 text-xs font-semibold">({customer?.failed_payments} failed)</span>
+                    )}
                   </div>
                 </div>
                 <div>
@@ -334,7 +337,7 @@ const SelectedCaseView = ({ caseId }: { caseId: string }) => {
                 <div>
                   <div className="text-[10px] uppercase tracking-wider text-slate-500">Reliability</div>
                   <div className="font-medium text-slate-300 text-sm mt-0.5 flex items-baseline gap-1">
-                    {customer?.reliability_score || 0} <span className="text-slate-600 text-[10px]">/ 100</span>
+                    {Math.round((customer?.reliability_score || 0) * 100)}% <span className="text-slate-600 text-[10px]">Score</span>
                   </div>
                 </div>
               </div>
