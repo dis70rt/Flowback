@@ -90,3 +90,32 @@ LEFT JOIN LATERAL (
     LIMIT 1
 ) a ON true
 WHERE c.id = $1 LIMIT 1;
+
+-- name: ListRecoveredCases :many
+SELECT 
+    c.id,
+    c.subscription_id,
+    c.payment_id,
+    c.amount_at_risk,
+    c.amount_recovered,
+    c.currency,
+    c.recovered_at,
+    c.created_at,
+    cust.name      AS customer_name,
+    cust.email     AS customer_email,
+    cust.value_tier AS customer_tier,
+    a.channel      AS recovery_channel,
+    a.action_type  AS recovery_action_type
+FROM recovery_cases c
+LEFT JOIN customers cust ON cust.id = c.customer_id
+LEFT JOIN LATERAL (
+    SELECT channel, action_type
+    FROM recovery_actions
+    WHERE recovery_case_id = c.id
+      AND status = 'EXECUTED'
+    ORDER BY created_at DESC
+    LIMIT 1
+) a ON true
+WHERE c.status = 'RECOVERED'
+ORDER BY c.recovered_at DESC
+LIMIT $1 OFFSET $2;

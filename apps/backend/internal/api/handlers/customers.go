@@ -17,6 +17,27 @@ func NewCustomerHandler(q *repo.Queries) *CustomerHandler {
 	return &CustomerHandler{queries: q}
 }
 
+func (h *CustomerHandler) ListCustomers(c *gin.Context) {
+	// Simple pagination defaults
+	limit := int32(50)
+	offset := int32(0)
+	
+	customers, err := h.queries.ListCustomers(c.Request.Context(), repo.ListCustomersParams{
+		Limit:  limit,
+		Offset: offset,
+	})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list customers"})
+		return
+	}
+	
+	if customers == nil {
+		customers = []repo.Customer{}
+	}
+
+	c.JSON(http.StatusOK, customers)
+}
+
 func (h *CustomerHandler) GetCustomer(c *gin.Context) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {

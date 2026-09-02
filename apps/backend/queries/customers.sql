@@ -7,7 +7,7 @@ WHERE razorpay_customer_id = $1 LIMIT 1;
 
 -- name: IncrementFailedPayment :exec
 UPDATE customers
-SET failed_payments = failed_payments + 1, updated_at = NOW()
+SET failed_payments = failed_payments + 1, total_payments = total_payments + 1, updated_at = NOW()
 WHERE id = $1;
 
 -- name: IncrementSuccessfulPayment :exec
@@ -34,3 +34,8 @@ LIMIT 1;
 -- name: GetCustomerByID :one
 SELECT * FROM customers
 WHERE id = $1 LIMIT 1;
+
+-- name: ListCustomers :many
+SELECT * FROM customers
+ORDER BY created_at DESC
+LIMIT $1 OFFSET $2;

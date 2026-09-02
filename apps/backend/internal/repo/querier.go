@@ -20,18 +20,24 @@ type Querier interface {
 	GetActionsByCase(ctx context.Context, recoveryCaseID uuid.UUID) ([]GetActionsByCaseRow, error)
 	GetActiveCaseBySubscription(ctx context.Context, subscriptionID string) (GetActiveCaseBySubscriptionRow, error)
 	GetCaseSummary(ctx context.Context, id uuid.UUID) (GetCaseSummaryRow, error)
+	GetChannelDistribution(ctx context.Context) ([]GetChannelDistributionRow, error)
 	GetCommunicationHistory(ctx context.Context, razorpayCustomerID sql.NullString) ([]CommunicationHistory, error)
 	GetCustomerByEmailOrPhone(ctx context.Context, arg GetCustomerByEmailOrPhoneParams) (uuid.UUID, error)
 	GetCustomerByID(ctx context.Context, id uuid.UUID) (Customer, error)
 	GetCustomerProfile(ctx context.Context, razorpayCustomerID sql.NullString) (GetCustomerProfileRow, error)
+	GetDashboardOverview(ctx context.Context) (GetDashboardOverviewRow, error)
 	GetPendingActions(ctx context.Context) ([]GetPendingActionsRow, error)
+	GetPipelineStatus(ctx context.Context) ([]GetPipelineStatusRow, error)
 	GetRecoveryCaseByID(ctx context.Context, id uuid.UUID) (RecoveryCase, error)
+	GetRecoveryTrends(ctx context.Context) ([]GetRecoveryTrendsRow, error)
 	IncrementFailedPayment(ctx context.Context, id uuid.UUID) error
 	IncrementSuccessfulPayment(ctx context.Context, id uuid.UUID) error
 	InsertAuditLog(ctx context.Context, arg InsertAuditLogParams) error
 	InsertCommunicationHistory(ctx context.Context, arg InsertCommunicationHistoryParams) (uuid.UUID, error)
 	InsertCustomer(ctx context.Context, arg InsertCustomerParams) (uuid.UUID, error)
+	ListCustomers(ctx context.Context, arg ListCustomersParams) ([]Customer, error)
 	ListPendingCases(ctx context.Context, arg ListPendingCasesParams) ([]ListPendingCasesRow, error)
+	ListRecoveredCases(ctx context.Context, arg ListRecoveredCasesParams) ([]ListRecoveredCasesRow, error)
 	ListRecoveryCases(ctx context.Context, arg ListRecoveryCasesParams) ([]ListRecoveryCasesRow, error)
 	LogWebhookEvent(ctx context.Context, arg LogWebhookEventParams) error
 	MarkActionExecuted(ctx context.Context, arg MarkActionExecutedParams) error

@@ -101,7 +101,7 @@ func (q *Queries) GetCustomerProfile(ctx context.Context, razorpayCustomerID sql
 
 const incrementFailedPayment = `-- name: IncrementFailedPayment :exec
 UPDATE customers
-SET failed_payments = failed_payments + 1, updated_at = NOW()
+SET failed_payments = failed_payments + 1, total_payments = total_payments + 1, updated_at = NOW()
 WHERE id = $1
 `
 
@@ -159,4 +159,55 @@ func (q *Queries) InsertCustomer(ctx context.Context, arg InsertCustomerParams) 
 	var id uuid.UUID
 	err := row.Scan(&id)
 	return id, err
+}
+
+const listCustomers = `-- name: ListCustomers :many
+SELECT id, razorpay_customer_id, email, phone, name, value_tier, tenure, preferred_channel, total_payments, successful_payments, failed_payments, created_at, updated_at, city, state, reliability_score FROM customers
+ORDER BY created_at DESC
+LIMIT $1 OFFSET $2
+`
+
+type ListCustomersParams struct {
+	Limit  int32 `json:"limit"`
+	Offset int32 `json:"offset"`
+}
+
+func (q *Queries) ListCustomers(ctx context.Context, arg ListCustomersParams) ([]Customer, error) {
+	rows, err := q.db.QueryContext(ctx, listCustomers, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Customer
+	for rows.Next() {
+		var i Customer
+		if err := rows.Scan(
+			&i.ID,
+			&i.RazorpayCustomerID,
+			&i.Email,
+			&i.Phone,
+			&i.Name,
+			&i.ValueTier,
+			&i.Tenure,
+			&i.PreferredChannel,
+			&i.TotalPayments,
+			&i.SuccessfulPayments,
+			&i.FailedPayments,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.City,
+			&i.State,
+			&i.ReliabilityScore,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
