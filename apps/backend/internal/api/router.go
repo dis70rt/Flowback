@@ -2,6 +2,7 @@ package api
 
 import (
 	_ "embed"
+	"os"
 
 	"github.com/gin-gonic/gin"
 
@@ -25,6 +26,10 @@ type RouterDeps struct {
 
 func NewRouter(deps RouterDeps) *gin.Engine {
 	r := gin.Default()
+
+	// Serve local audio files
+	os.MkdirAll("./audio", 0755)
+	r.Static("/audio", "./audio")
 
 	// Health Check
 	r.GET("/health", func(c *gin.Context) {

@@ -65,6 +65,8 @@ services:
     - OTEL_EXPORTER_OTLP_ENDPOINT=jaeger:4317
     networks:
     - flowback_network
+    volumes:
+    - ./data/audio:/app/audio
     depends_on:
       postgres:
         condition: service_healthy
@@ -82,6 +84,8 @@ services:
     - OTEL_EXPORTER_OTLP_ENDPOINT=jaeger:4317
     networks:
     - flowback_network
+    volumes:
+    - ./data/audio:/app/audio
     depends_on:
       postgres:
         condition: service_healthy
