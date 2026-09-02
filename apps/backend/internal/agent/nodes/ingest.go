@@ -3,7 +3,8 @@ package nodes
 import (
 	"database/sql"
 	"encoding/json"
-	"log"
+	"fmt"
+	"log/slog"
 
 	"github.com/dis70rt/flowback/internal/repo"
 	"github.com/google/uuid"
@@ -76,7 +77,7 @@ func NewIngestNode(queries *repo.Queries) *workflow.FunctionNode {
 					if err == nil {
 						internalUUID = uuid.NullUUID{UUID: dbID, Valid: true}
 					} else if err != sql.ErrNoRows {
-						log.Printf("ERROR looking up customer by email/phone: %v", err)
+						slog.Error(fmt.Sprintf("ERROR looking up customer by email/phone: %v", err))
 				}
 				
 				}
@@ -89,7 +90,7 @@ func NewIngestNode(queries *repo.Queries) *workflow.FunctionNode {
 				if rzpCustID == "" { rzpCustID = phone }
 				if rzpCustID == "" { rzpCustID = email }
 
-				log.Printf("Ingested Razorpay webhook: customer_id=%s, razorpay_customer_id=%s, payment_id=%s, subscription_id=%s, amount=%f", internalUUID.UUID.String(), rzpCustID, rzp.Payload.Payment.Entity.ID, rzp.Payload.Subscription.Entity.ID, rzp.Payload.Payment.Entity.Amount)
+				slog.Info(fmt.Sprintf("Ingested Razorpay webhook: customer_id=%s, razorpay_customer_id=%s, payment_id=%s, subscription_id=%s, amount=%f", internalUUID.UUID.String(), rzpCustID, rzp.Payload.Payment.Entity.ID, rzp.Payload.Subscription.Entity.ID, rzp.Payload.Payment.Entity.Amount))
 
 				_ = ctx.State().Set("customer_id", rzpCustID) // fallback string for display
 				_ = ctx.State().Set("payment_id", rzp.Payload.Payment.Entity.ID)
@@ -113,7 +114,7 @@ func NewIngestNode(queries *repo.Queries) *workflow.FunctionNode {
 							if err == nil {
 								enriched.NewsContext = headlines
 							} else {
-								log.Printf("Warning: failed to fetch news context for %s: %v", cust.City.String, err)
+								slog.Info(fmt.Sprintf("Warning: failed to fetch news context for %s: %v", cust.City.String, err))
 							}
 						}
 					}

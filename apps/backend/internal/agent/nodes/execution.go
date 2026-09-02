@@ -3,7 +3,8 @@ package nodes
 import (
 	"database/sql"
 	"encoding/json"
-	"log"
+	"fmt"
+	"log/slog"
 
 	"github.com/dis70rt/flowback/internal/pubsub"
 	"github.com/dis70rt/flowback/internal/repo"
@@ -80,7 +81,7 @@ func saveAndPublish(ctx agent.Context, draft any, audioURL string, queries *repo
 			Currency:       "INR",
 		})
 		if err != nil {
-			log.Printf("ERROR creating recovery case: %v", err)
+			slog.Error(fmt.Sprintf("ERROR creating recovery case: %v", err))
 		}
 	}
 
@@ -101,7 +102,7 @@ func saveAndPublish(ctx agent.Context, draft any, audioURL string, queries *repo
 		Status:             repo.ActionStatusPENDING,
 	})
 	if err != nil {
-		log.Printf("ERROR saving recovery action: %v", err)
+		slog.Error(fmt.Sprintf("ERROR saving recovery action: %v", err))
 	}
 
 	// Publish SSE Event
@@ -165,14 +166,14 @@ func NewVoiceExecutionNode(queries *repo.Queries, bus pubsub.Publisher, openRout
 				}
 			}
 
-			log.Printf("Synthesizing voice audio using OpenRouter TTS...")
+			slog.Info(fmt.Sprintf("Synthesizing voice audio using OpenRouter TTS..."))
 			audioURL := ""
 			url, err := GenerateVoiceAudio(draftStr, openRouterAPIKey)
 			if err != nil {
-				log.Printf("ERROR generating audio: %v", err)
+				slog.Error(fmt.Sprintf("ERROR generating audio: %v", err))
 			} else {
 				audioURL = url
-				log.Printf("Audio Base64 successfully generated.")
+				slog.Info(fmt.Sprintf("Audio Base64 successfully generated."))
 
 				// Inject audioURL into draft so it saves to DB
 				if m, ok := draft.(map[string]any); ok {

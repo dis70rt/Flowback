@@ -2,7 +2,8 @@ package razorpay
 
 import (
 	"encoding/json"
-	"log"
+	"fmt"
+	"log/slog"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -37,7 +38,7 @@ func (h *WebhookHandler) Handle(c *gin.Context) {
 	signature := c.GetHeader("X-Razorpay-Signature")
 
 	if !VerifySignature(body, signature, h.Secret) {
-		log.Println("ERROR: Webhook signature verification failed! Possible malicious request.")
+		slog.Info("ERROR: Webhook signature verification failed! Possible malicious request.")
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid signature"})
 		return
 	}
@@ -51,7 +52,7 @@ func (h *WebhookHandler) Handle(c *gin.Context) {
 		return
 	}
 
-	log.Printf("SUCCESS: SECURE EVENT RECEIVED: %s\n", payload.Event)
+	slog.Info(fmt.Sprintf("SUCCESS: SECURE EVENT RECEIVED: %s\n", payload.Event))
 
 	// LOG WEBHOOK TO DB (THIS FIRES THE SMART POSTGRES TRIGGER FOR SUCCESS EVENTS!)
 	err = h.Queries.LogWebhookEvent(c.Request.Context(), repo.LogWebhookEventParams{
@@ -61,13 +62,13 @@ func (h *WebhookHandler) Handle(c *gin.Context) {
 		Signature:       signature,
 	})
 	if err != nil {
-		log.Printf("ERROR: Failed to log webhook to DB: %v", err)
+		slog.Error(fmt.Sprintf("ERROR: Failed to log webhook to DB: %v", err))
 	}
 
 	// ENQUEUE FOR AI ONLY IF IT IS A FAILED PAYMENT
 	if payload.Event == "payment.failed" || payload.Event == "subscription.charged.failed" {
 		if err := h.Enqueuer.EnqueueWebhook(payload.Event, body); err != nil {
-			log.Printf("ERROR: Failed to enqueue webhook: %v", err)
+			slog.Error(fmt.Sprintf("ERROR: Failed to enqueue webhook: %v", err))
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to enqueue"})
 			return
 		}

@@ -1,7 +1,7 @@
 package config
 
 import (
-	"log"
+	"log/slog"
 	"os"
 
 	"github.com/joho/godotenv"
@@ -25,7 +25,7 @@ func Load() *Config {
 
 	webhookSecret := os.Getenv("RAZORPAY_WEBHOOK_SECRET")
 	if webhookSecret == "" {
-		log.Println("WARNING: RAZORPAY_WEBHOOK_SECRET is not set in .env")
+		slog.Info("WARNING: RAZORPAY_WEBHOOK_SECRET is not set in .env")
 	}
 
 	keyID := os.Getenv("RAZORPAY_KEY_ID")
@@ -45,7 +45,7 @@ func Load() *Config {
 
 	openRouterAPIKey := os.Getenv("OPENROUTER_API_KEY")
 	if openRouterAPIKey == "" {
-		log.Println("WARNING: OPENROUTER_API_KEY is not set in .env")
+		slog.Info("WARNING: OPENROUTER_API_KEY is not set in .env")
 	}
 	openRouterModel := os.Getenv("OPENROUTER_MODEL")
 	if openRouterModel == "" {

@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -65,24 +65,24 @@ func (b *redisBus) Subscribe(ctx context.Context, channel string, handler Messag
 		sub := b.client.Subscribe(ctx, channel)
 		defer func() {
 			if err := sub.Close(); err != nil {
-				log.Printf("[PUBSUB] Error closing subscription for channel %q: %v\n", channel, err)
+				slog.Info(fmt.Sprintf("[PUBSUB] Error closing subscription for channel %q: %v\n", channel, err))
 			}
 		}()
 
-		log.Printf("[PUBSUB] Subscribed -> channel=%q\n", channel)
+		slog.Info(fmt.Sprintf("[PUBSUB] Subscribed -> channel=%q\n", channel))
 
 		ch := sub.Channel()
 		for {
 			select {
 			case msg, ok := <-ch:
 				if !ok {
-					log.Printf("[PUBSUB] Channel closed -> channel=%q\n", channel)
+					slog.Info(fmt.Sprintf("[PUBSUB] Channel closed -> channel=%q\n", channel))
 					return
 				}
 				handler(ctx, []byte(msg.Payload))
 
 			case <-ctx.Done():
-				log.Printf("[PUBSUB] Context cancelled -> unsubscribing from channel=%q\n", channel)
+				slog.Info(fmt.Sprintf("[PUBSUB] Context cancelled -> unsubscribing from channel=%q\n", channel))
 				return
 			}
 		}

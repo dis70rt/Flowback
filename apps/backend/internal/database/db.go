@@ -3,7 +3,7 @@ package database
 import (
 	"database/sql"
 	"fmt"
-	"log"
+	"log/slog"
 
 	_ "github.com/lib/pq"
 	"github.com/pressly/goose/v3"
@@ -33,6 +33,6 @@ func InitDB(dsn string) (*sql.DB, error) {
 		return nil, fmt.Errorf("failed to apply migrations: %w", err)
 	}
 
-	log.Println("DATABASE: Connected and Migrations Applied!")
+	slog.Info("DATABASE: Connected and Migrations Applied!")
 	return db, nil
 }

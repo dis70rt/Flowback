@@ -2,7 +2,8 @@ package events
 
 import (
 	"encoding/json"
-	"log"
+	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/hibiken/asynq"
@@ -37,10 +38,10 @@ func (e *Enqueuer) EnqueueWebhook(event string, rawJSON []byte) error {
 	
 	info, err := e.client.Enqueue(task)
 	if err != nil {
-		log.Printf("ERROR: Could not enqueue webhook task: %v\n", err)
+		slog.Error(fmt.Sprintf("ERROR: Could not enqueue webhook task: %v\n", err))
 		return err
 	}
 
-	log.Printf("ENQUEUED: Task %s | Queue: %s | Topic: %s | Event: %s\n", info.ID, info.Queue, TopicWebhookReceived, event)
+	slog.Info(fmt.Sprintf("ENQUEUED: Task %s | Queue: %s | Topic: %s | Event: %s\n", info.ID, info.Queue, TopicWebhookReceived, event))
 	return nil
 }
