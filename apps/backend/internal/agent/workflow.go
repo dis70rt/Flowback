@@ -3,14 +3,14 @@ package agent
 import (
 	"context"
 
-	"github.com/dis70rt/flowback/internal/repo"
 	"github.com/dis70rt/flowback/internal/pubsub"
+	"github.com/dis70rt/flowback/internal/repo"
 	"github.com/google/uuid"
 	"google.golang.org/adk/v2/agent"
 	"google.golang.org/adk/v2/agent/workflowagent"
 	"google.golang.org/adk/v2/session"
 	"google.golang.org/adk/v2/workflow"
-	
+
 	"github.com/dis70rt/flowback/internal/agent/core"
 	"github.com/dis70rt/flowback/internal/agent/nodes"
 )
@@ -20,7 +20,7 @@ type RecoveryState struct {
 }
 
 func BuildOrchestrator(
-	ctx context.Context, 
+	ctx context.Context,
 	queries *repo.Queries,
 	strategyAgent agent.Agent,
 	copywriterAgent agent.Agent,
@@ -38,7 +38,7 @@ func BuildOrchestrator(
 	if err != nil {
 		return nil, err
 	}
-	
+
 	nodeCopywriter, err := workflow.NewAgentNode(copywriterAgent, workflow.NodeConfig{})
 	if err != nil {
 		return nil, err
@@ -58,14 +58,14 @@ func BuildOrchestrator(
 			} else if strategyOut.Action == "send_call" {
 				route = "voice"
 			}
-			
+
 			_ = ctx.State().Set("channel", strategyOut.Action)
 			_ = ctx.State().Set("reasoning", strategyOut.Reasoning)
 			_ = ctx.State().Set("discount_percentage", strategyOut.DiscountPercentage)
 
 			ev := session.NewEvent(ctx, ctx.InvocationID())
 			ev.Routes = []string{route}
-			
+
 			if route == "copywriter" || route == "voice" {
 				profileStr := "Name: Unknown, Tier: Basic"
 				uid, err := ctx.State().Get("internal_customer_uuid")
@@ -77,16 +77,16 @@ func BuildOrchestrator(
 						}
 					}
 				}
-				
+
 				ev.Output = map[string]string{
-					"Action": strategyOut.Action,
+					"Action":            strategyOut.Action,
 					"StrategyReasoning": strategyOut.Reasoning,
-					"CustomerProfile": profileStr,
+					"CustomerProfile":   profileStr,
 				}
 			} else {
-				ev.Output = strategyOut 
+				ev.Output = strategyOut
 			}
-			
+
 			if err := emit(ev); err != nil {
 				return nil, err
 			}

@@ -3,7 +3,7 @@ package handlers
 import (
 	"database/sql"
 	"net/http"
-	
+
 	"github.com/dis70rt/flowback/internal/repo"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -38,7 +38,7 @@ func (h *CustomerHandler) GetPayments(c *gin.Context) {
 	// In production, this would hit Razorpay API or a local 'payments' replica table.
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Payment history will appear here",
-		"data": []interface{}{}, 
+		"data": []interface{}{},
 	})
 }
 
@@ -48,7 +48,7 @@ func (h *CustomerHandler) GetCommunications(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid customer uuid"})
 		return
 	}
-	
+
 	customer, err := h.queries.GetCustomerByID(c.Request.Context(), id)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "customer not found"})

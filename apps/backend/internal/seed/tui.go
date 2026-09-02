@@ -183,7 +183,7 @@ func RunTUI(db *sql.DB, cfg *config.Config) {
 	stateMemo := stateMainMenu
 
 	for {
-		m := initialModel(db) 
+		m := initialModel(db)
 		m.state = stateMemo
 
 		p := tea.NewProgram(m, tea.WithAltScreen())
@@ -213,14 +213,14 @@ func RunTUI(db *sql.DB, cfg *config.Config) {
 			rdb := redis.NewClient(&redis.Options{
 				Addr: cfg.RedisAddr,
 			})
-			
+
 			err := rdb.FlushAll(context.Background()).Err()
 			if err != nil {
 				fmt.Printf("[!] Failed to flush redis: %v\n", err)
 			} else {
 				fmt.Println("[+] SUCCESS: Flushed the entire Redis database! All ghost tasks have been deleted.")
 			}
-			
+
 			fmt.Println("\n[Press Enter to return to menu...]")
 			bufio.NewReader(os.Stdin).ReadBytes('\n')
 			continue
@@ -233,11 +233,11 @@ func RunTUI(db *sql.DB, cfg *config.Config) {
 		if finalModel.cursor < len(finalModel.customers) {
 			targetCustomer = finalModel.customers[finalModel.cursor]
 		} else {
-			continue 
+			continue
 		}
 
 		// Set dynamic amounts based on value tier
-		amt := 50000 
+		amt := 50000
 		if targetCustomer.Name == "Enterprise CEO" {
 			amt = 95000000
 		} else if targetCustomer.Tier == "HIGH" {

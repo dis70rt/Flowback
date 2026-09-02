@@ -1,9 +1,9 @@
 package nodes
 
 import (
+	"github.com/dis70rt/flowback/internal/agent/core"
 	"google.golang.org/adk/v2/agent"
 	"google.golang.org/genai"
-	"github.com/dis70rt/flowback/internal/agent/core"
 )
 
 // CopywriterOutput is the typed Go struct for the generated message.

@@ -38,7 +38,7 @@ func NewGetCustomerTool(queries *repo.Queries) (tool.Tool, error) {
 			if err != nil {
 				return nil, fmt.Errorf("failed to fetch customer: %v", err)
 			}
-			
+
 			return &CustomerOutput{
 				RazorpayCustomerID: profile.RazorpayCustomerID.String,
 				Name:               profile.Name.String,

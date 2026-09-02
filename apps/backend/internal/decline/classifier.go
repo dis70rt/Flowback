@@ -29,7 +29,7 @@ type ClassificationResult struct {
 //   - https://razorpay.com/docs/build/llm-docs/errors/payments/payment-methods-error-parameters.md
 var softDeclineCodes = map[string]bool{
 	// Customer drop-offs — customer can fix and retry immediately
-	"payment_cancelled":              true, // Explicit cancel; show a "try again" prompt
+	"payment_cancelled":               true, // Explicit cancel; show a "try again" prompt
 	"payment_collect_request_expired": true, // UPI collect timeout (5-10 min window missed)
 	"insufficient_funds":              true, // Docs: "retry with different card or method"
 	"insufficient_fund":               true, // Alternate key sometimes seen in webhooks
@@ -92,12 +92,12 @@ var hardDeclineCodes = map[string]bool{
 	"upi_payment_cancelled":              true, // Deliberate cancel — do not auto-retry
 
 	// Business / integration hard stops
-	"input_validation_failed":                true, // Wrong integration parameters
-	"international_transaction_not_allowed":  true, // Account not enabled for intl payments
-	"invalid_amount":                         true, // Invalid amount in request
-	"invalid_currency":                       true, // Currency not enabled
-	"mobile_number_invalid":                  true, // Docs: "check mobile mapped to UPI account"
-	"duplicate_request":                      true, // Same idempotency key — do not retry
+	"input_validation_failed":               true, // Wrong integration parameters
+	"international_transaction_not_allowed": true, // Account not enabled for intl payments
+	"invalid_amount":                        true, // Invalid amount in request
+	"invalid_currency":                      true, // Currency not enabled
+	"mobile_number_invalid":                 true, // Docs: "check mobile mapped to UPI account"
+	"duplicate_request":                     true, // Same idempotency key — do not retry
 }
 
 // RazorpayPaymentEvent is a targeted struct that maps the nested Razorpay webhook JSON structure.

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/dis70rt/flowback/internal/repo"
 	"github.com/dis70rt/flowback/internal/agent/core"
+	"github.com/dis70rt/flowback/internal/repo"
 )
 
 // PolicyResult holds the outcome of the guardrail evaluation
@@ -30,7 +30,7 @@ func EvaluatePolicy(
 
 	// -------------------------------------------------------------------------
 	// GUARDRAIL 1: Fraud & Risk Prevention
-	// If a user has a terrible reliability score, the AI is NOT allowed to 
+	// If a user has a terrible reliability score, the AI is NOT allowed to
 	// send them a new payment link (which they might exploit) or give a discount.
 	// -------------------------------------------------------------------------
 	if customer.ReliabilityScore < 0.3 {

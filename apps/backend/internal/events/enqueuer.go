@@ -2,7 +2,6 @@ package events
 
 import (
 	"encoding/json"
-	"fmt"
 	"log/slog"
 	"time"
 
@@ -32,16 +31,16 @@ func (e *Enqueuer) EnqueueWebhook(event string, rawJSON []byte) error {
 		TopicWebhookReceived,
 		payloadBytes,
 		asynq.MaxRetry(5),
-		asynq.Timeout(5 * time.Minute),       // Each attempt must finish within 5mins``
-		asynq.Retention(24*time.Hour),       // Keep completed tasks for 24h for debugging
+		asynq.Timeout(5*time.Minute),  // Each attempt must finish within 5mins``
+		asynq.Retention(24*time.Hour), // Keep completed tasks for 24h for debugging
 	)
-	
+
 	info, err := e.client.Enqueue(task)
 	if err != nil {
-		slog.Error(fmt.Sprintf("ERROR: Could not enqueue webhook task: %v\n", err))
+		slog.Error("could not enqueue webhook task", "error", err)
 		return err
 	}
 
-	slog.Info(fmt.Sprintf("ENQUEUED: Task %s | Queue: %s | Topic: %s | Event: %s\n", info.ID, info.Queue, TopicWebhookReceived, event))
+	slog.Info("task enqueued", "task_id", info.ID, "queue", info.Queue, "topic", TopicWebhookReceived, "event", event)
 	return nil
 }

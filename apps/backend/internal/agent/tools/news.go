@@ -23,7 +23,6 @@ type SearchNewsOutput struct {
 	Summary   string   `json:"summary"`
 }
 
-
 func FetchLocalNews(location string, query string) ([]string, string, error) {
 	apiKey := os.Getenv("NEWS_API_KEY")
 	if apiKey == "" {
@@ -31,7 +30,7 @@ func FetchLocalNews(location string, query string) ([]string, string, error) {
 	}
 
 	searchQuery := fmt.Sprintf("%s %s", location, query)
-	apiURL := fmt.Sprintf("https://newsapi.org/v2/everything?q=%s&sortBy=publishedAt&apiKey=%s", 
+	apiURL := fmt.Sprintf("https://newsapi.org/v2/everything?q=%s&sortBy=publishedAt&apiKey=%s",
 		url.QueryEscape(searchQuery), apiKey)
 
 	client := &http.Client{Timeout: 10 * time.Second}
@@ -80,7 +79,7 @@ func NewSearchLocalNewsTool() (tool.Tool, error) {
 			Description: "Searches the web for breaking news in the customer's location (e.g., floods, banking outages) that might explain a payment failure.",
 		},
 		func(ctx agent.Context, input SearchNewsInput) (*SearchNewsOutput, error) {
-			
+
 			headlines, summary, err := FetchLocalNews(input.Location, input.Query)
 			if err != nil {
 				return nil, err

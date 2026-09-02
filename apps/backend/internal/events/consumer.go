@@ -2,7 +2,6 @@ package events
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 
 	"github.com/hibiken/asynq"
@@ -34,7 +33,7 @@ func NewConsumer(redisAddr string, concurrency int) *Consumer {
 
 func (c *Consumer) Register(topic string, handler TaskHandler) {
 	c.mux.HandleFunc(topic, handler)
-	slog.Info(fmt.Sprintf("[CONSUMER] Registered handler for topic: %s\n", topic))
+	slog.Info("registered consumer handler", "topic", topic)
 }
 
 func (c *Consumer) Start() error {

@@ -23,7 +23,7 @@ func InitDB(dsn string) (*sql.DB, error) {
 
 	// Tell goose to use our embedded SQL files from the migrations package
 	goose.SetBaseFS(migrations.FS)
-	
+
 	if err := goose.SetDialect("postgres"); err != nil {
 		return nil, fmt.Errorf("failed to set goose dialect: %w", err)
 	}

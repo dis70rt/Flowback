@@ -46,7 +46,7 @@ func Init(ctx context.Context, serviceName string, otlpEndpoint string) (func(co
 		sdktrace.WithBatcher(exp),
 		sdktrace.WithResource(res),
 	)
-	
+
 	otel.SetTracerProvider(tp)
 	slog.Info("OpenTelemetry Tracing initialized", slog.String("endpoint", otlpEndpoint))
 

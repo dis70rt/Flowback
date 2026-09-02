@@ -3,21 +3,19 @@ package nodes
 import (
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"log/slog"
 
+	"github.com/dis70rt/flowback/internal/agent/tools"
 	"github.com/dis70rt/flowback/internal/repo"
 	"github.com/google/uuid"
-	"github.com/dis70rt/flowback/internal/agent/tools"
 	"google.golang.org/adk/v2/agent"
 	"google.golang.org/adk/v2/workflow"
 )
 
-
 type EnrichedPayload struct {
-	Webhook  string         `json:"webhook"`
-	Customer *repo.Customer `json:"customer_profile"`
-	NewsContext []string `json:"local_news_headlines,omitempty"`
+	Webhook     string         `json:"webhook"`
+	Customer    *repo.Customer `json:"customer_profile"`
+	NewsContext []string       `json:"local_news_headlines,omitempty"`
 }
 
 type RazorpayEvent struct {
@@ -52,13 +50,17 @@ func NewIngestNode(queries *repo.Queries) *workflow.FunctionNode {
 		func(ctx agent.Context, webhookJSON string) (string, error) {
 			var rzp RazorpayEvent
 			if err := json.Unmarshal([]byte(webhookJSON), &rzp); err == nil {
-				
+
 				email := rzp.Payload.Payment.Entity.Email
 				phone := rzp.Payload.Payment.Entity.Contact
-				
+
 				rzpCustID := rzp.Payload.Subscription.Entity.CustomerID
-				if rzpCustID == "" { rzpCustID = rzp.Payload.Order.Entity.CustomerID }
-				if rzpCustID == "" { rzpCustID = rzp.Payload.Payment.Entity.CustomerID }
+				if rzpCustID == "" {
+					rzpCustID = rzp.Payload.Order.Entity.CustomerID
+				}
+				if rzpCustID == "" {
+					rzpCustID = rzp.Payload.Payment.Entity.CustomerID
+				}
 
 				var internalUUID uuid.NullUUID
 
@@ -77,9 +79,8 @@ func NewIngestNode(queries *repo.Queries) *workflow.FunctionNode {
 					if err == nil {
 						internalUUID = uuid.NullUUID{UUID: dbID, Valid: true}
 					} else if err != sql.ErrNoRows {
-						slog.Error(fmt.Sprintf("ERROR looking up customer by email/phone: %v", err))
-				}
-				
+						slog.ErrorContext(ctx, "failed to look up customer by email/phone", "error", err)
+					}
 				}
 				_ = ctx.State().Set("internal_customer_uuid", internalUUID)
 
@@ -87,42 +88,50 @@ func NewIngestNode(queries *repo.Queries) *workflow.FunctionNode {
 					_ = queries.IncrementFailedPayment(ctx, internalUUID.UUID)
 				}
 
-				if rzpCustID == "" { rzpCustID = phone }
-				if rzpCustID == "" { rzpCustID = email }
+				if rzpCustID == "" {
+					rzpCustID = phone
+				}
+				if rzpCustID == "" {
+					rzpCustID = email
+				}
 
-				slog.Info(fmt.Sprintf("Ingested Razorpay webhook: customer_id=%s, razorpay_customer_id=%s, payment_id=%s, subscription_id=%s, amount=%f", internalUUID.UUID.String(), rzpCustID, rzp.Payload.Payment.Entity.ID, rzp.Payload.Subscription.Entity.ID, rzp.Payload.Payment.Entity.Amount))
+				slog.InfoContext(ctx, "ingested webhook",
+					"payment_id", rzp.Payload.Payment.Entity.ID,
+					"customer_id", rzpCustID,
+					"subscription_id", rzp.Payload.Subscription.Entity.ID,
+				)
 
-				_ = ctx.State().Set("customer_id", rzpCustID) // fallback string for display
+				_ = ctx.State().Set("customer_id", rzpCustID)
 				_ = ctx.State().Set("payment_id", rzp.Payload.Payment.Entity.ID)
 				_ = ctx.State().Set("amount", int64(rzp.Payload.Payment.Entity.Amount))
 				_ = ctx.State().Set("subscription_id", rzp.Payload.Subscription.Entity.ID)
 			}
-			
+
 			// Bundle webhook and customer profile into a single JSON
 			enriched := EnrichedPayload{Webhook: webhookJSON}
-			
+
 			internalUUIDVal, err := ctx.State().Get("internal_customer_uuid")
 			if err == nil {
 				if internalUUID, ok := internalUUIDVal.(uuid.NullUUID); ok && internalUUID.Valid {
 					cust, err := queries.GetCustomerByID(ctx, internalUUID.UUID)
 					if err == nil {
 						enriched.Customer = &cust
-						
+
 						// Fetch news context automatically
 						if cust.City.String != "" {
 							headlines, _, err := tools.FetchLocalNews(cust.City.String, "bank outage internet storm flood")
 							if err == nil {
 								enriched.NewsContext = headlines
 							} else {
-								slog.Info(fmt.Sprintf("Warning: failed to fetch news context for %s: %v", cust.City.String, err))
+								slog.WarnContext(ctx, "failed to fetch news context", "city", cust.City.String, "error", err)
 							}
 						}
 					}
 				}
 			}
-			
+
 			b, _ := json.MarshalIndent(enriched, "", "  ")
-			return string(b), nil 
+			return string(b), nil
 		},
 		workflow.NodeConfig{},
 	)

@@ -1,7 +1,6 @@
 package database
 
 import (
-	"fmt"
 	"log/slog"
 
 	"github.com/hibiken/asynq"
@@ -13,7 +12,7 @@ func InitAsynqClient(redisAddr string) *asynq.Client {
 		Addr: redisAddr,
 	})
 
-	slog.Info(fmt.Sprintf("REDIS: Asynq client initialized at %s\n", redisAddr))
-	
+	slog.Info("asynq client initialized", "redis_addr", redisAddr)
+
 	return client
 }

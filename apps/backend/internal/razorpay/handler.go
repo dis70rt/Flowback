@@ -2,12 +2,11 @@ package razorpay
 
 import (
 	"encoding/json"
-	"fmt"
 	"log/slog"
 	"net/http"
 
-	"github.com/gin-gonic/gin"
 	"github.com/dis70rt/flowback/internal/repo"
+	"github.com/gin-gonic/gin"
 )
 
 type TaskEnqueuer interface {
@@ -52,7 +51,7 @@ func (h *WebhookHandler) Handle(c *gin.Context) {
 		return
 	}
 
-	slog.Info(fmt.Sprintf("SUCCESS: SECURE EVENT RECEIVED: %s\n", payload.Event))
+	slog.InfoContext(c.Request.Context(), "secure event received", "event", payload.Event)
 
 	// LOG WEBHOOK TO DB (THIS FIRES THE SMART POSTGRES TRIGGER FOR SUCCESS EVENTS!)
 	err = h.Queries.LogWebhookEvent(c.Request.Context(), repo.LogWebhookEventParams{
@@ -62,13 +61,13 @@ func (h *WebhookHandler) Handle(c *gin.Context) {
 		Signature:       signature,
 	})
 	if err != nil {
-		slog.Error(fmt.Sprintf("ERROR: Failed to log webhook to DB: %v", err))
+		slog.ErrorContext(c.Request.Context(), "failed to log webhook to DB", "error", err)
 	}
 
 	// ENQUEUE FOR AI ONLY IF IT IS A FAILED PAYMENT
 	if payload.Event == "payment.failed" || payload.Event == "subscription.charged.failed" {
 		if err := h.Enqueuer.EnqueueWebhook(payload.Event, body); err != nil {
-			slog.Error(fmt.Sprintf("ERROR: Failed to enqueue webhook: %v", err))
+			slog.ErrorContext(c.Request.Context(), "failed to enqueue webhook", "error", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to enqueue"})
 			return
 		}

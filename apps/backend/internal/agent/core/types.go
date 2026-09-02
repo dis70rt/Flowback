@@ -5,5 +5,5 @@ type StrategyOutput struct {
 	DelayHours         int     `json:"delay_hours"`
 	DiscountPercentage int     `json:"discount_percentage"`
 	Reasoning          string  `json:"reasoning"`
-	Confidence  float32 `json:"confidence"`
+	Confidence         float32 `json:"confidence"`
 }

@@ -19,10 +19,10 @@ func NewClient(keyID, secret string) *Client {
 }
 
 type CreatePaymentLinkRequest struct {
-	Amount       int64             `json:"amount"`
-	Currency     string            `json:"currency"`
-	Description  string            `json:"description,omitempty"`
-	Notes        map[string]string `json:"notes,omitempty"`
+	Amount      int64             `json:"amount"`
+	Currency    string            `json:"currency"`
+	Description string            `json:"description,omitempty"`
+	Notes       map[string]string `json:"notes,omitempty"`
 }
 
 type CreatePaymentLinkResponse struct {

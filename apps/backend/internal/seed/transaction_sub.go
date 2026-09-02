@@ -50,7 +50,7 @@ func (t *FailedSubscriptionTask) Execute(client *razorpay.Client, keyID string) 
 			"test_purpose": "flowback_simulation",
 		},
 	}
-	
+
 	sub, err := client.Subscription.Create(subData, nil)
 	if err != nil {
 		log.Fatalf("Failed to create subscription: %v", err)
@@ -60,7 +60,7 @@ func (t *FailedSubscriptionTask) Execute(client *razorpay.Client, keyID string) 
 	log.Printf("Subscription Created: %s\n", subID)
 
 	log.Printf("Attempting to force failed payment via Server-to-Server AJAX request...")
-	
+
 	formData := url.Values{}
 	formData.Set("key_id", keyID)
 	formData.Set("subscription_id", subID)

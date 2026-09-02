@@ -103,7 +103,7 @@ func RunDBSeeder(db *sql.DB, rzpKeyID, rzpKeySecret string) {
 			INSERT INTO customers (id, razorpay_customer_id, name, email, phone, value_tier, tenure, preferred_channel, city, state, failed_payments, reliability_score)
 			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 		`, c.ID, realRzpID, c.Name, c.Email, c.Phone, c.Tier, c.Tenure, c.Channel, c.City, c.State, c.FailedCount, c.Reliability)
-		
+
 		if err != nil {
 			log.Fatalf("Failed to insert %s: %v", c.Name, err)
 		}

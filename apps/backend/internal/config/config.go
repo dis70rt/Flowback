@@ -16,6 +16,7 @@ type Config struct {
 	RedisURL          string
 	OpenRouterAPIKey  string
 	OpenRouterModel   string
+	TreeLog           bool // Controlled by FLOWBACK_TREE_LOG=true
 }
 
 func Load() *Config {
@@ -52,6 +53,8 @@ func Load() *Config {
 		openRouterModel = "z-ai/glm-5.3-flash"
 	}
 
+	treeLog := os.Getenv("FLOWBACK_TREE_LOG") == "true"
+
 	return &Config{
 		RazorpaySecret:    webhookSecret,
 		RazorpayKeyID:     keyID,
@@ -61,5 +64,6 @@ func Load() *Config {
 		RedisURL:          redisURL,
 		OpenRouterAPIKey:  openRouterAPIKey,
 		OpenRouterModel:   openRouterModel,
+		TreeLog:           treeLog,
 	}
 }
