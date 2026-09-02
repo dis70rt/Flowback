@@ -167,6 +167,142 @@ paths:
                     example: rejected
         '400':
           description: Invalid action UUID
+  /metrics/overview:
+    get:
+      summary: Dashboard Overview
+      description: Returns top level metrics for the dashboard (total amount at risk, recovered, etc).
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total_amount_at_risk:
+                    type: integer
+                  total_amount_recovered:
+                    type: integer
+                  active_cases:
+                    type: integer
+                  recovered_cases:
+                    type: integer
+                  ai_success_rate:
+                    type: number
+  /metrics/trends:
+    get:
+      summary: Recovery Trends
+      description: Returns a daily breakdown of failed vs recovered amounts for the last 30 days.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    date:
+                      type: string
+                      format: date
+                    daily_failed:
+                      type: integer
+                    daily_recovered:
+                      type: integer
+  /metrics/channels:
+    get:
+      summary: AI Channel Distribution
+      description: Returns counts of AI actions grouped by communication channel.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    channel:
+                      type: string
+                    count:
+                      type: integer
+  /metrics/pipeline:
+    get:
+      summary: Action Pipeline Status
+      description: Returns counts of AI actions grouped by status (PENDING_APPROVAL, EXECUTED, etc).
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    status:
+                      type: string
+                    count:
+                      type: integer
+  /metrics/recovered:
+    get:
+      summary: Recovered Cases
+      description: Returns a list of successfully recovered cases with customer info and the channel that triggered the recovery. Use this to power an expanded "Recovered Revenue" breakdown table on the dashboard.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      format: uuid
+                    subscription_id:
+                      type: string
+                    payment_id:
+                      type: string
+                    amount_at_risk:
+                      type: integer
+                    amount_recovered:
+                      type: integer
+                    currency:
+                      type: string
+                    recovered_at:
+                      type: string
+                      format: date-time
+                    created_at:
+                      type: string
+                      format: date-time
+                    customer_name:
+                      type: string
+                    customer_email:
+                      type: string
+                    customer_tier:
+                      type: string
+                    recovery_channel:
+                      type: string
+                    recovery_action_type:
+                      type: string
+  /customers:
+
+    get:
+      summary: List Customers
+      description: Get a paginated list of all customers.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Customer'
   /customers/{id}:
     get:
       summary: Get Customer by ID

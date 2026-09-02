@@ -80,7 +80,12 @@ func NewRouter(deps RouterDeps) *gin.Engine {
 		apiGroup.GET("/stream", handlers.StreamHandler(deps.Bus))
 
 		// Metrics
-		apiGroup.GET("/metrics", handlers.MetricsHandler(deps.Queries))
+		metricsHandler := handlers.NewMetricsHandler(deps.Queries)
+		apiGroup.GET("/metrics/overview", metricsHandler.GetOverview)
+		apiGroup.GET("/metrics/trends", metricsHandler.GetTrends)
+		apiGroup.GET("/metrics/channels", metricsHandler.GetChannels)
+		apiGroup.GET("/metrics/pipeline", metricsHandler.GetPipeline)
+		apiGroup.GET("/metrics/recovered", metricsHandler.GetRecoveredCases)
 
 		// Cases
 		caseHandler := handlers.NewCaseHandler(deps.Queries, deps.RazorpayClient)
@@ -93,6 +98,7 @@ func NewRouter(deps RouterDeps) *gin.Engine {
 
 		// Customers
 		customerHandler := handlers.NewCustomerHandler(deps.Queries)
+		apiGroup.GET("/customers", customerHandler.ListCustomers)
 		apiGroup.GET("/customers/:id", customerHandler.GetCustomer)
 		apiGroup.GET("/customers/:id/payments", customerHandler.GetPayments)
 		apiGroup.GET("/customers/:id/communications", customerHandler.GetCommunications)

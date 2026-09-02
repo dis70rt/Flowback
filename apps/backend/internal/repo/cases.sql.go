@@ -291,6 +291,94 @@ func (q *Queries) ListPendingCases(ctx context.Context, arg ListPendingCasesPara
 	return items, nil
 }
 
+const listRecoveredCases = `-- name: ListRecoveredCases :many
+SELECT 
+    c.id,
+    c.subscription_id,
+    c.payment_id,
+    c.amount_at_risk,
+    c.amount_recovered,
+    c.currency,
+    c.recovered_at,
+    c.created_at,
+    cust.name      AS customer_name,
+    cust.email     AS customer_email,
+    cust.value_tier AS customer_tier,
+    a.channel      AS recovery_channel,
+    a.action_type  AS recovery_action_type
+FROM recovery_cases c
+LEFT JOIN customers cust ON cust.id = c.customer_id
+LEFT JOIN LATERAL (
+    SELECT channel, action_type
+    FROM recovery_actions
+    WHERE recovery_case_id = c.id
+      AND status = 'EXECUTED'
+    ORDER BY created_at DESC
+    LIMIT 1
+) a ON true
+WHERE c.status = 'RECOVERED'
+ORDER BY c.recovered_at DESC
+LIMIT $1 OFFSET $2
+`
+
+type ListRecoveredCasesParams struct {
+	Limit  int32 `json:"limit"`
+	Offset int32 `json:"offset"`
+}
+
+type ListRecoveredCasesRow struct {
+	ID                 uuid.UUID      `json:"id"`
+	SubscriptionID     string         `json:"subscription_id"`
+	PaymentID          sql.NullString `json:"payment_id"`
+	AmountAtRisk       int64          `json:"amount_at_risk"`
+	AmountRecovered    sql.NullInt64  `json:"amount_recovered"`
+	Currency           string         `json:"currency"`
+	RecoveredAt        sql.NullTime   `json:"recovered_at"`
+	CreatedAt          time.Time      `json:"created_at"`
+	CustomerName       sql.NullString `json:"customer_name"`
+	CustomerEmail      sql.NullString `json:"customer_email"`
+	CustomerTier       sql.NullString `json:"customer_tier"`
+	RecoveryChannel    sql.NullString `json:"recovery_channel"`
+	RecoveryActionType ActionType     `json:"recovery_action_type"`
+}
+
+func (q *Queries) ListRecoveredCases(ctx context.Context, arg ListRecoveredCasesParams) ([]ListRecoveredCasesRow, error) {
+	rows, err := q.db.QueryContext(ctx, listRecoveredCases, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListRecoveredCasesRow
+	for rows.Next() {
+		var i ListRecoveredCasesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.SubscriptionID,
+			&i.PaymentID,
+			&i.AmountAtRisk,
+			&i.AmountRecovered,
+			&i.Currency,
+			&i.RecoveredAt,
+			&i.CreatedAt,
+			&i.CustomerName,
+			&i.CustomerEmail,
+			&i.CustomerTier,
+			&i.RecoveryChannel,
+			&i.RecoveryActionType,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listRecoveryCases = `-- name: ListRecoveryCases :many
 SELECT c.id, c.customer_id, c.subscription_id, c.payment_id, c.razorpay_error_code, c.razorpay_error_desc, c.decline_category, c.ai_diagnosis, c.ai_confidence, c.status, c.retry_count, c.max_retries, c.contact_count, c.max_contacts, c.amount_at_risk, c.currency, c.amount_recovered, c.first_failed_at, c.recovery_deadline, c.recovered_at, c.next_retry_at, c.created_at, c.updated_at, c.ai_strategy, 
        a.action_type AS latest_action_type, 
