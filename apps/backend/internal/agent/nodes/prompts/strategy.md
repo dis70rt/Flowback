@@ -50,9 +50,10 @@ If `customer_profile` is null (unknown customer):
 2. **Both bounds exhausted (deadlock):** If `contact_attempts >= 4` AND `silent_retries >= 3`, output `silent_retry`, `delay_hours=0`, `confidence=0.05`, and state "All recovery bounds exhausted — no further action possible" in reasoning.
 3. **Max contacts reached:** If `contact_attempts >= 4`, you MUST output `silent_retry`. No communication actions allowed.
 4. **Max retries reached:** If `silent_retries >= 3`, do NOT output `silent_retry`. You MUST escalate to a communication action.
-5. **Contact hours:** Any communication action (`send_email`, `send_sms`, `send_whatsapp`, `send_call`) MUST land within 08:00–19:00 IST. Set `delay_hours` accordingly.
-6. **Preferred channel (critical):** You MUST choose the action matching `customer_profile.preferred_channel`. Only `create_payment_link` and `silent_retry` are exempt from this rule.
-7. **Enterprise SLA:** For `value_tier` = "enterprise", prefer `create_payment_link` or `send_call` over automated retries after the first failure.
+5. **Escalation override (applies BEFORE Rule 6):** If `customer_profile.failed_payments >= 4` AND `customer_profile.reliability_score < 0.4`, you MUST output `send_call`. This OVERRIDES the preferred_channel rule. The customer's preferred channel no longer applies at this churn risk level.
+6. **Contact hours:** Any communication action (`send_email`, `send_sms`, `send_whatsapp`, `send_call`) MUST land within 08:00–19:00 IST. Set `delay_hours` accordingly.
+7. **Preferred channel (critical):** You MUST choose the action matching `customer_profile.preferred_channel`. Only `create_payment_link`, `silent_retry`, and `send_call` (when Rule 5 applies) are exempt from this rule.
+8. **Enterprise SLA:** For `value_tier` = "enterprise", prefer `create_payment_link` or `send_call` over automated retries after the first failure.
 
 ## Output Format — STRICT
 Your entire response MUST be a single raw JSON object. No markdown fences, no prose, no explanation outside of the JSON.

@@ -3,6 +3,7 @@ package tools
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"os"
@@ -26,8 +27,11 @@ type SearchNewsOutput struct {
 func FetchLocalNews(location string, query string) ([]string, string, error) {
 	apiKey := os.Getenv("NEWS_API_KEY")
 	if apiKey == "" {
+		slog.Warn("news context skipped: NEWS_API_KEY not set", "city", location)
 		return nil, "", fmt.Errorf("NEWS_API_KEY is not configured in the environment")
 	}
+
+	slog.Info("fetching local news context", "city", location, "query", query)
 
 	searchQuery := fmt.Sprintf("%s %s", location, query)
 	apiURL := fmt.Sprintf("https://newsapi.org/v2/everything?q=%s&sortBy=publishedAt&apiKey=%s",
@@ -66,7 +70,10 @@ func FetchLocalNews(location string, query string) ([]string, string, error) {
 
 	summary := "No major disruptions found."
 	if len(headlines) > 0 {
+		slog.Info("news context injected into payload", "city", location, "headline_count", len(headlines), "headlines", headlines)
 		summary = "Recent news articles suggest potential disruptions related to the query."
+	} else {
+		slog.Info("no relevant news headlines found for city", "city", location)
 	}
 
 	return headlines, summary, nil

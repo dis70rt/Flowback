@@ -152,8 +152,8 @@ func NewVoiceExecutionNode(queries *repo.Queries, bus pubsub.Publisher, openRout
 		func(ctx agent.Context, draft any) (string, error) {
 			draftStr := ""
 			if m, ok := draft.(map[string]any); ok {
-				if msg, ok := m["message"].(string); ok {
-					draftStr = msg
+				if body, ok := m["body"].(string); ok {
+					draftStr = body
 				}
 			}
 			if draftStr == "" {
@@ -165,7 +165,7 @@ func NewVoiceExecutionNode(queries *repo.Queries, bus pubsub.Publisher, openRout
 				}
 			}
 
-			slog.InfoContext(ctx, "synthesizing voice audio via TTS")
+			slog.InfoContext(ctx, "synthesizing voice audio via TTS", "script_preview", draftStr[:min(len(draftStr), 80)])
 			audioURL := ""
 			url, err := GenerateVoiceAudio(draftStr, openRouterAPIKey)
 			if err != nil {

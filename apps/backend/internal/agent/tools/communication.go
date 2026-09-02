@@ -3,6 +3,7 @@ package tools
 import (
 	"database/sql"
 	"fmt"
+	"log/slog"
 
 	"github.com/dis70rt/flowback/internal/repo"
 	"google.golang.org/adk/v2/agent"
@@ -29,6 +30,7 @@ func NewGetCommunicationHistoryTool(queries *repo.Queries) (tool.Tool, error) {
 			Description: "Fetches past emails/messages to see if the user opened them or ignored them.",
 		},
 		func(ctx agent.Context, input GetCommHistoryInput) (*[]CommHistoryOutput, error) {
+			slog.InfoContext(ctx, "tool called: get_communication_history", "razorpay_customer_id", input.RazorpayCustomerID)
 			param := sql.NullString{String: input.RazorpayCustomerID, Valid: true}
 			rows, err := queries.GetCommunicationHistory(ctx, param)
 			if err != nil {
@@ -50,6 +52,8 @@ func NewGetCommunicationHistoryTool(queries *repo.Queries) (tool.Tool, error) {
 				}
 				out = append(out, item)
 			}
+
+			slog.InfoContext(ctx, "communication history fetched", "razorpay_customer_id", input.RazorpayCustomerID, "record_count", len(out))
 			return &out, nil
 		},
 	)

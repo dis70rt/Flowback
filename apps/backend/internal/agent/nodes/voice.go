@@ -37,6 +37,7 @@ func GenerateVoiceAudio(script string, apiKey string) (string, error) {
 	payload := map[string]interface{}{
 		"model":          "google/gemini-3.1-flash-tts-preview",
 		"input":          script,
+		"voice":          "Zephyr",
 		"responseFormat": "wav",
 	}
 
