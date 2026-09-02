@@ -1,4 +1,13 @@
 services:
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: flowback_jaeger
+    ports:
+    - "16686:16686"
+    - "4317:4317"
+    networks:
+    - flowback_network
+    restart: unless-stopped
   postgres:
     image: postgres:16-alpine
     container_name: flowback_postgres
@@ -53,6 +62,7 @@ services:
     environment:
     - DATABASE_URL=postgres://flowback:postgres@postgres:5432/flowback?sslmode=disable
     - REDIS_ADDR=redis:6379
+    - OTEL_EXPORTER_OTLP_ENDPOINT=jaeger:4317
     networks:
     - flowback_network
     depends_on:
@@ -69,6 +79,7 @@ services:
     environment:
     - DATABASE_URL=postgres://flowback:postgres@postgres:5432/flowback?sslmode=disable
     - REDIS_ADDR=redis:6379
+    - OTEL_EXPORTER_OTLP_ENDPOINT=jaeger:4317
     networks:
     - flowback_network
     depends_on:

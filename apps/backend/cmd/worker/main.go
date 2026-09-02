@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"log"
 	"strings"
 
 	"github.com/hibiken/asynq"
@@ -14,6 +13,9 @@ import (
 	"github.com/dis70rt/flowback/internal/agent/core"
 	"github.com/dis70rt/flowback/internal/agent/nodes"
 	"github.com/dis70rt/flowback/internal/config"
+	"github.com/dis70rt/flowback/internal/telemetry"
+	"os"
+	"log/slog"
 	"github.com/dis70rt/flowback/internal/events"
 	"github.com/dis70rt/flowback/internal/pubsub"
 	"github.com/dis70rt/flowback/internal/repo"
@@ -29,50 +31,57 @@ const (
 func main() {
 	cfg := config.Load()
 
+	ctx := context.Background()
+	shutdown, err := telemetry.Init(ctx, "flowback-worker", os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT"))
+	if err != nil {
+		slog.Error("failed to init telemetry", "error", err)
+	} else {
+		defer shutdown(ctx)
+	}
+
 	db, err := sql.Open("postgres", cfg.DatabaseURL)
 	if err != nil {
-		log.Fatalf("failed to connect to db: %v", err)
+		slog.Error("Fatal Error", "details", "failed to connect to db: %v", err)
 	}
 	defer db.Close()
 	queries := repo.New(db)
 
-	ctx := context.Background()
 	registry, err := core.InitModels(ctx, cfg.OpenRouterAPIKey, cfg.OpenRouterModel)
 	if err != nil {
-		log.Fatalf("failed to init models: %v", err)
+		slog.Error("Fatal Error", "details", "failed to init models: %v", err)
 	}
 
 	strategyAgent, err := nodes.NewStrategyAgent(registry, queries)
 	if err != nil {
-		log.Fatalf("failed to init strategy agent: %v", err)
+		slog.Error("Fatal Error", "details", "failed to init strategy agent: %v", err)
 	}
 	
 	copywriterAgent, err := nodes.NewCopywriterAgent(registry)
 	if err != nil {
-		log.Fatalf("failed to init copywriter agent: %v", err)
+		slog.Error("Fatal Error", "details", "failed to init copywriter agent: %v", err)
 	}
 	
 	voiceAgent, err := nodes.NewVoiceAgent(registry)
 	if err != nil {
-		log.Fatalf("failed to init voice agent: %v", err)
+		slog.Error("Fatal Error", "details", "failed to init voice agent: %v", err)
 	}
 
 	bus, _ := pubsub.New(cfg.RedisURL)
 	orchestrator, err := flowagent.BuildOrchestrator(ctx, queries, strategyAgent, copywriterAgent, voiceAgent, bus, cfg.OpenRouterAPIKey)
 	if err != nil {
-		log.Fatalf("failed to build orchestrator: %v", err)
+		slog.Error("Fatal Error", "details", "failed to build orchestrator: %v", err)
 	}
 
 	r, err := runner.NewInMemory("recovery_worker", orchestrator)
 	if err != nil {
-		log.Fatalf("failed to create runner: %v", err)
+		slog.Error("Fatal Error", "details", "failed to create runner: %v", err)
 	}
 
 	var redisConnOpt asynq.RedisConnOpt
 	if strings.HasPrefix(cfg.RedisURL, "redis://") || strings.HasPrefix(cfg.RedisURL, "rediss://") {
 		opt, err := asynq.ParseRedisURI(cfg.RedisURL)
 		if err != nil {
-			log.Fatalf("failed to parse redis url: %v", err)
+			slog.Error("Fatal Error", "details", "failed to parse redis url: %v", err)
 		}
 		redisConnOpt = opt
 	} else {
@@ -96,11 +105,11 @@ func main() {
 	mux.HandleFunc(TypeProcessWebhook, func(c context.Context, t *asynq.Task) error {
 		var wp events.WebhookPayload
 		if err := json.Unmarshal(t.Payload(), &wp); err != nil {
-			log.Printf("[WORKER] Failed to parse task payload: %v", err)
+			slog.Info("[WORKER] Failed to parse task payload: %v", err)
 			return err
 		}
 		
-		log.Printf("[WORKER] Started processing webhook task. Event: %s", wp.Event)
+		slog.Info("[WORKER] Started processing webhook task. Event: %s", wp.Event)
 		
 		userID := "system"
 		sessionID := t.ResultWriter().TaskID() 
@@ -112,20 +121,20 @@ func main() {
 		
 		for ev, err := range iter {
 			if err != nil {
-				log.Printf("[WORKER] Graph Error: %v", err)
+				slog.Info("[WORKER] Graph Error: %v", err)
 				return err 
 			}
 			if ev != nil {
-				log.Printf("[WORKER] Finished processing node step.")
+				slog.Info("[WORKER] Finished processing node step.")
 			}
 		}
 
-		log.Println("[WORKER] AI Graph execution finished successfully.")
+		slog.Info("[WORKER] AI Graph execution finished successfully.")
 		return nil
 	})
 
-	log.Printf("Worker booting up. Listening on Redis: %s", cfg.RedisURL)
+	slog.Info("Worker booting up. Listening on Redis: %s", cfg.RedisURL)
 	if err := srv.Run(mux); err != nil {
-		log.Fatalf("could not run worker server: %v", err)
+		slog.Error("Fatal Error", "details", "could not run worker server: %v", err)
 	}
 }
