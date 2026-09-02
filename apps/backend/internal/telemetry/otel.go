@@ -29,7 +29,7 @@ func Init(ctx context.Context, serviceName string, otlpEndpoint string) (func(co
 	res, err := resource.Merge(
 		resource.Default(),
 		resource.NewWithAttributes(
-			semconv.SchemaURL,
+			"",
 			semconv.ServiceName(serviceName),
 		),
 	)
