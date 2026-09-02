@@ -130,7 +130,7 @@ export const CallMockup = ({ customer, pendingAction }: any) => {
         {callState === 'active' && scriptBody && (
            <div className="mt-8 px-6 w-full flex-1 overflow-hidden flex flex-col">
               <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-white/80 text-xs leading-relaxed italic overflow-y-auto mb-32">
-                 "{scriptBody}"
+                 "{scriptBody.replace(/\[.*?\]\s*/g, '')}"
               </div>
            </div>
         )}
