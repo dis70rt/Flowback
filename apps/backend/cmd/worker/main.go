@@ -145,30 +145,45 @@ func main() {
 
 			// Accumulate tree node for this event.
 			if ev != nil && root != nil {
-				// ev.Author is the agent/node name for LLM agents.
-				// ev.NodeInfo.Path is set for function nodes.
 				nodeName := ev.Author
+				parent := root
+
 				if ev.NodeInfo != nil && ev.NodeInfo.Path != "" {
-					// Take just the first segment (top-level node name).
-					seg := ev.NodeInfo.Path
-					if idx := strings.Index(seg, "/"); idx >= 0 {
-						seg = seg[:idx]
+					parts := strings.Split(ev.NodeInfo.Path, "/")
+					startIndex := 0
+					if len(parts) > 1 && strings.HasPrefix(parts[0], "orchestrator_agent") {
+						startIndex = 1
 					}
-					if at := strings.Index(seg, "@"); at >= 0 {
-						seg = seg[:at]
-					}
-					if seg != "" {
-						nodeName = seg
+
+					for i := startIndex; i < len(parts); i++ {
+						seg := parts[i]
+						if at := strings.Index(seg, "@"); at >= 0 {
+							seg = seg[:at]
+						}
+						if seg == "" {
+							continue
+						}
+
+						if i == len(parts)-1 {
+							nodeName = seg
+						} else {
+							parentNode, exists := nodeMap[seg]
+							if !exists {
+								parentNode = parent.AddChild(seg)
+								nodeMap[seg] = parentNode
+							}
+							parent = parentNode
+						}
 					}
 				}
 
-				if nodeName == "" || nodeName == "user" {
+				if nodeName == "" || nodeName == "user" || nodeName == "orchestrator_agent" {
 					continue
 				}
 
 				treeNode, exists := nodeMap[nodeName]
 				if !exists {
-					treeNode = root.AddChild(nodeName)
+					treeNode = parent.AddChild(nodeName)
 					nodeMap[nodeName] = treeNode
 				}
 

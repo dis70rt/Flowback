@@ -239,7 +239,7 @@ func RunTUI(db *sql.DB, cfg *config.Config) {
 		// Set dynamic amounts based on value tier
 		amt := 50000
 		if targetCustomer.Name == "Enterprise CEO" {
-			amt = 95000000
+			amt = 1499000 // ₹14,990 (kept under the strict ₹15k test mode card limit)
 		} else if targetCustomer.Tier == "HIGH" {
 			amt = 999000
 		} else if targetCustomer.Tier == "LOW" {
