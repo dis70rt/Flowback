@@ -17,15 +17,36 @@ export const WorkspaceLayout = () => {
               <h1 className="font-semibold text-lg tracking-tight">FlowBack</h1>
             </div>
 
-            <nav className="flex flex-col gap-1.5 mt-4">
-              <NavLink to="/" className={({ isActive }) => `flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium ${isActive ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800/50'}`}>
-                <Home className="w-4 h-4" /> Overview
+                        <nav className="flex flex-col gap-1.5 mt-4">
+              <NavLink to="/" style={({ isActive }) => ({
+                backgroundColor: isActive ? 'rgba(79, 140, 255, 0.12)' : 'transparent',
+                color: isActive ? '#F1F4FC' : '#A3AEC5'
+              })} className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium hover:bg-slate-800/30">
+                {({ isActive }) => (
+                  <>
+                    <Home className="w-4 h-4" style={{ color: isActive ? '#4F8CFF' : '#A3AEC5' }} /> Overview
+                  </>
+                )}
               </NavLink>
-              <NavLink to="/cases" className={({ isActive }) => `flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium ${isActive ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800/50'}`}>
-                <List className="w-4 h-4" /> Live Queue
+              <NavLink to="/cases" style={({ isActive }) => ({
+                backgroundColor: isActive ? 'rgba(79, 140, 255, 0.12)' : 'transparent',
+                color: isActive ? '#F1F4FC' : '#A3AEC5'
+              })} className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium hover:bg-slate-800/30">
+                {({ isActive }) => (
+                  <>
+                    <List className="w-4 h-4" style={{ color: isActive ? '#4F8CFF' : '#A3AEC5' }} /> Live Queue
+                  </>
+                )}
               </NavLink>
-              <NavLink to="/customers" className={({ isActive }) => `flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium ${isActive ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800/50'}`}>
-                <Users className="w-4 h-4" /> Customers
+              <NavLink to="/customers" style={({ isActive }) => ({
+                backgroundColor: isActive ? 'rgba(79, 140, 255, 0.12)' : 'transparent',
+                color: isActive ? '#F1F4FC' : '#A3AEC5'
+              })} className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium hover:bg-slate-800/30">
+                {({ isActive }) => (
+                  <>
+                    <Users className="w-4 h-4" style={{ color: isActive ? '#4F8CFF' : '#A3AEC5' }} /> Customers
+                  </>
+                )}
               </NavLink>
             </nav>
           </div>

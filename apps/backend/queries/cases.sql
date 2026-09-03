@@ -104,8 +104,8 @@ SELECT
     cust.name      AS customer_name,
     cust.email     AS customer_email,
     cust.value_tier AS customer_tier,
-    a.channel      AS recovery_channel,
-    a.action_type  AS recovery_action_type
+    a.channel::text      AS recovery_channel,
+    a.action_type::text  AS recovery_action_type
 FROM recovery_cases c
 LEFT JOIN customers cust ON cust.id = c.customer_id
 LEFT JOIN LATERAL (

@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getMetrics, getCases, getCaseDetails, getCustomer, getCustomers, approveDraft, rejectDraft } from '../api/services';
+import { getMetricsOverview, getMetrics, getCases, getCaseDetails, getCustomer, getCustomers, approveDraft, rejectDraft, getMetricsTrends, getMetricsChannels, getMetricsPipeline, getMetricsRecovered } from '../api/services';
 
 export const useCustomers = () => {
   return useQuery({
@@ -71,5 +71,40 @@ export const useCustomerCommunications = (id?: string) => {
     queryKey: ['customerCommunications', id],
     queryFn: () => import('../api/services').then(m => m.getCustomerCommunications(id!)),
     enabled: !!id,
+  });
+};
+
+export const useMetricsTrends = () => {
+  return useQuery({
+    queryKey: ['metricsTrends'],
+    queryFn: getMetricsTrends,
+  });
+};
+
+export const useMetricsChannels = () => {
+  return useQuery({
+    queryKey: ['metricsChannels'],
+    queryFn: getMetricsChannels,
+  });
+};
+
+export const useMetricsPipeline = () => {
+  return useQuery({
+    queryKey: ['metricsPipeline'],
+    queryFn: getMetricsPipeline,
+  });
+};
+
+export const useMetricsRecovered = () => {
+  return useQuery({
+    queryKey: ['metricsRecovered'],
+    queryFn: getMetricsRecovered,
+  });
+};
+
+export const useMetricsOverview = () => {
+  return useQuery({
+    queryKey: ['metricsOverview'],
+    queryFn: getMetricsOverview,
   });
 };

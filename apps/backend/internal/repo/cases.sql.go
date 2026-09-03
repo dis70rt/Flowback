@@ -304,8 +304,8 @@ SELECT
     cust.name      AS customer_name,
     cust.email     AS customer_email,
     cust.value_tier AS customer_tier,
-    a.channel      AS recovery_channel,
-    a.action_type  AS recovery_action_type
+    a.channel::text      AS recovery_channel,
+    a.action_type::text  AS recovery_action_type
 FROM recovery_cases c
 LEFT JOIN customers cust ON cust.id = c.customer_id
 LEFT JOIN LATERAL (
@@ -338,8 +338,8 @@ type ListRecoveredCasesRow struct {
 	CustomerName       sql.NullString `json:"customer_name"`
 	CustomerEmail      sql.NullString `json:"customer_email"`
 	CustomerTier       sql.NullString `json:"customer_tier"`
-	RecoveryChannel    sql.NullString `json:"recovery_channel"`
-	RecoveryActionType ActionType     `json:"recovery_action_type"`
+	RecoveryChannel    string         `json:"recovery_channel"`
+	RecoveryActionType string         `json:"recovery_action_type"`
 }
 
 func (q *Queries) ListRecoveredCases(ctx context.Context, arg ListRecoveredCasesParams) ([]ListRecoveredCasesRow, error) {

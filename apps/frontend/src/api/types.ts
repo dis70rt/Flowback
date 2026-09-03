@@ -100,3 +100,35 @@ export interface CommunicationHistory {
   opened_at: NullTime;
   clicked_at: NullTime;
 }
+
+export interface TrendData {
+  date: string;
+  daily_failed: number;
+  daily_recovered: number;
+}
+
+export interface ChannelData {
+  channel: NullString;
+  count: number;
+}
+
+export interface PipelineData {
+  status: string;
+  count: number;
+}
+
+export interface RecoveredCase {
+  id: string;
+  subscription_id: string;
+  payment_id: NullString;
+  amount_at_risk: number;
+  amount_recovered: NullInt64;
+  currency: string;
+  recovered_at: NullTime;
+  created_at: string;
+  customer_name: NullString;
+  customer_email: NullString;
+  customer_tier: NullString;
+  recovery_channel: NullString;
+  recovery_action_type: NullString;
+}

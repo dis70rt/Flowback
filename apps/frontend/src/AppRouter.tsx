@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { WorkspaceLayout } from './components/layout/WorkspaceLayout';
 import { Workspace } from './screens/Workspace';
 import { Customers } from './screens/Customers';
+import { Overview } from './screens/Overview';
 import { SplashScreen } from './components/SplashScreen';
 
 export const AppRouter = () => {
@@ -14,7 +15,7 @@ export const AppRouter = () => {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<WorkspaceLayout />}>
-            <Route index element={<Navigate to="/cases" replace />} />
+            <Route index element={<Overview />} />
             <Route path="cases" element={<Workspace />} />
             <Route path="customers" element={<Customers />} />
           </Route>
