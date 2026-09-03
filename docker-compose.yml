@@ -3,8 +3,8 @@ services:
     image: jaegertracing/all-in-one:latest
     container_name: flowback_jaeger
     ports:
-    - "16686:16686"
-    - "4317:4317"
+    - 16686:16686
+    - 4317:4317
     networks:
     - flowback_network
     restart: unless-stopped
@@ -89,6 +89,18 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+  frontend:
+    build:
+      context: .
+      dockerfile: ./infrastructure/docker/Dockerfile.frontend
+    container_name: flowback_frontend
+    restart: unless-stopped
+    ports:
+    - 3000:80
+    networks:
+    - flowback_network
+    depends_on:
+    - api
 volumes:
   pgdata:
     driver: local
