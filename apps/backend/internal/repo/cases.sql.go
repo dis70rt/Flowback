@@ -194,6 +194,7 @@ JOIN LATERAL (
     SELECT action_type, status, channel
     FROM recovery_actions
     WHERE recovery_case_id = c.id
+      AND status = 'PENDING_APPROVAL'
     ORDER BY created_at DESC
     LIMIT 1
 ) a ON true
@@ -304,12 +305,13 @@ SELECT
     cust.name      AS customer_name,
     cust.email     AS customer_email,
     cust.value_tier AS customer_tier,
-    a.channel::text      AS recovery_channel,
-    a.action_type::text  AS recovery_action_type
+    COALESCE(a.channel::text, '')::text AS recovery_channel,
+    COALESCE(a.action_type::text, '')::text AS recovery_action_type,
+    COALESCE(a.discount_percentage, 0)::int AS discount_percentage
 FROM recovery_cases c
 LEFT JOIN customers cust ON cust.id = c.customer_id
 LEFT JOIN LATERAL (
-    SELECT channel, action_type
+    SELECT channel, action_type, discount_percentage
     FROM recovery_actions
     WHERE recovery_case_id = c.id
       AND status = 'EXECUTED'
@@ -340,6 +342,7 @@ type ListRecoveredCasesRow struct {
 	CustomerTier       sql.NullString `json:"customer_tier"`
 	RecoveryChannel    string         `json:"recovery_channel"`
 	RecoveryActionType string         `json:"recovery_action_type"`
+	DiscountPercentage int32          `json:"discount_percentage"`
 }
 
 func (q *Queries) ListRecoveredCases(ctx context.Context, arg ListRecoveredCasesParams) ([]ListRecoveredCasesRow, error) {
@@ -365,6 +368,7 @@ func (q *Queries) ListRecoveredCases(ctx context.Context, arg ListRecoveredCases
 			&i.CustomerTier,
 			&i.RecoveryChannel,
 			&i.RecoveryActionType,
+			&i.DiscountPercentage,
 		); err != nil {
 			return nil, err
 		}

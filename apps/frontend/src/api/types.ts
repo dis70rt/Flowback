@@ -129,6 +129,7 @@ export interface RecoveredCase {
   customer_name: NullString;
   customer_email: NullString;
   customer_tier: NullString;
-  recovery_channel: NullString;
-  recovery_action_type: NullString;
+  recovery_channel: string;
+  recovery_action_type: string;
+  discount_percentage: number;
 }

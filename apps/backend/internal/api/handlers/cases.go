@@ -37,10 +37,26 @@ type CaseItemDTO struct {
 	LatestActionChannel sql.NullString `json:"latest_action_channel"`
 }
 
+type RecoveredCaseDTO struct {
+	ID                 string    `json:"id"`
+	SubscriptionID     string    `json:"subscription_id"`
+	AmountAtRisk       int64     `json:"amount_at_risk"`
+	AmountRecovered    int64     `json:"amount_recovered"`
+	Currency           string    `json:"currency"`
+	RecoveredAt        time.Time `json:"recovered_at"`
+	CreatedAt          time.Time `json:"created_at"`
+	CustomerName       string    `json:"customer_name"`
+	CustomerEmail      string    `json:"customer_email"`
+	CustomerTier       string    `json:"customer_tier"`
+	RecoveryChannel    string    `json:"recovery_channel"`
+	RecoveryActionType string    `json:"recovery_action_type"`
+	DiscountPercentage int32     `json:"discount_percentage"`
+}
+
 type ListCasesResponse struct {
-	Page  int           `json:"page"`
-	Limit int           `json:"limit"`
-	Data  []CaseItemDTO `json:"data"`
+	Page  int         `json:"page"`
+	Limit int         `json:"limit"`
+	Data  interface{} `json:"data"`
 }
 
 type EditDraftRequest struct {
@@ -61,8 +77,43 @@ func (h *CaseHandler) ListCases(c *gin.Context) {
 
 	offset := (page - 1) * limit
 
-	var dtos []CaseItemDTO
+	if filter == "recovered" {
+		dbCases, err := h.queries.ListRecoveredCases(c.Request.Context(), repo.ListRecoveredCasesParams{
+			Limit:  int32(limit),
+			Offset: int32(offset),
+		})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch recovered cases"})
+			return
+		}
+		
+		dtos := make([]RecoveredCaseDTO, 0)
+		for _, row := range dbCases {
+			dtos = append(dtos, RecoveredCaseDTO{
+				ID:                 row.ID.String(),
+				SubscriptionID:     row.SubscriptionID,
+				AmountAtRisk:       row.AmountAtRisk,
+				AmountRecovered:    row.AmountRecovered.Int64,
+				Currency:           row.Currency,
+				RecoveredAt:        row.RecoveredAt.Time,
+				CreatedAt:          row.CreatedAt,
+				CustomerName:       row.CustomerName.String,
+				CustomerEmail:      row.CustomerEmail.String,
+				CustomerTier:       row.CustomerTier.String,
+				RecoveryChannel:    row.RecoveryChannel,
+				RecoveryActionType: row.RecoveryActionType,
+				DiscountPercentage: row.DiscountPercentage,
+			})
+		}
+		c.JSON(http.StatusOK, ListCasesResponse{
+			Page:  page,
+			Limit: limit,
+			Data:  dtos,
+		})
+		return
+	}
 
+	var dtos []CaseItemDTO
 	if filter == "pending" {
 		dbCases, err := h.queries.ListPendingCases(c.Request.Context(), repo.ListPendingCasesParams{
 			Limit:  int32(limit),
@@ -105,6 +156,10 @@ func (h *CaseHandler) ListCases(c *gin.Context) {
 				LatestActionChannel: row.LatestActionChannel,
 			})
 		}
+	}
+
+	if dtos == nil {
+		dtos = make([]CaseItemDTO, 0)
 	}
 
 	c.JSON(http.StatusOK, ListCasesResponse{
@@ -203,7 +258,6 @@ func (h *CaseHandler) EditDraft(c *gin.Context) {
 		return
 	}
 
-	// Edit acts as Approve
 	h.ApproveDraft(c)
 }
 

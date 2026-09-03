@@ -126,10 +126,10 @@ export const Overview = () => {
         { channel: { String: "send_whatsapp", Valid: true }, count: 458 }
       ],
       recovered: [
-        { id: "1", currency: "INR", amount_at_risk: 15000000, payment_id: { String: "pay_1", Valid: true }, created_at: d.toISOString(), recovery_action_type: { String: "WHATSAPP", Valid: true }, customer_name: { String: "TechCorp Inc", Valid: true }, customer_email: { String: "billing@techcorp.com", Valid: true }, customer_tier: { String: "ENTERPRISE", Valid: true }, amount_recovered: { Int64: 15000000, Valid: true }, recovery_channel: { String: "send_call", Valid: true }, recovered_at: { Time: d.toISOString(), Valid: true }, subscription_id: "sub_1" },
-        { id: "2", currency: "INR", amount_at_risk: 4500000, payment_id: { String: "pay_2", Valid: true }, created_at: d.toISOString(), recovery_action_type: { String: "WHATSAPP", Valid: true }, customer_name: { String: "Design Studio", Valid: true }, customer_email: { String: "hello@design.co", Valid: true }, customer_tier: { String: "GROWTH", Valid: true }, amount_recovered: { Int64: 4500000, Valid: true }, recovery_channel: { String: "send_email", Valid: true }, recovered_at: { Time: d.toISOString(), Valid: true }, subscription_id: "sub_2" },
-        { id: "3", currency: "INR", amount_at_risk: 32000000, payment_id: { String: "pay_3", Valid: true }, created_at: d.toISOString(), recovery_action_type: { String: "WHATSAPP", Valid: true }, customer_name: { String: "Global Retail", Valid: true }, customer_email: { String: "finance@retail.com", Valid: true }, customer_tier: { String: "ENTERPRISE", Valid: true }, amount_recovered: { Int64: 32000000, Valid: true }, recovery_channel: { String: "send_whatsapp", Valid: true }, recovered_at: { Time: d.toISOString(), Valid: true }, subscription_id: "sub_3" },
-        { id: "4", currency: "INR", amount_at_risk: 1200000, payment_id: { String: "pay_4", Valid: true }, created_at: d.toISOString(), recovery_action_type: { String: "WHATSAPP", Valid: true }, customer_name: { String: "Acme Startup", Valid: true }, customer_email: { String: "founders@acme.io", Valid: true }, customer_tier: { String: "STARTER", Valid: true }, amount_recovered: { Int64: 1200000, Valid: true }, recovery_channel: { String: "send_sms", Valid: true }, recovered_at: { Time: d.toISOString(), Valid: true }, subscription_id: "sub_4" },
+        { id: "1", currency: "INR", amount_at_risk: 15000000, payment_id: { String: "pay_1", Valid: true }, created_at: d.toISOString(), recovery_action_type: "WHATSAPP", customer_name: { String: "TechCorp Inc", Valid: true }, customer_email: { String: "billing@techcorp.com", Valid: true }, customer_tier: { String: "ENTERPRISE", Valid: true }, amount_recovered: { Int64: 15000000, Valid: true }, recovery_channel: "send_call", recovered_at: { Time: d.toISOString(), Valid: true }, subscription_id: "sub_1", discount_percentage: 0 },
+        { id: "2", currency: "INR", amount_at_risk: 4500000, payment_id: { String: "pay_2", Valid: true }, created_at: d.toISOString(), recovery_action_type: "EMAIL", customer_name: { String: "Design Studio", Valid: true }, customer_email: { String: "hello@design.co", Valid: true }, customer_tier: { String: "GROWTH", Valid: true }, amount_recovered: { Int64: 4500000, Valid: true }, recovery_channel: "send_email", recovered_at: { Time: d.toISOString(), Valid: true }, subscription_id: "sub_2", discount_percentage: 15 },
+        { id: "3", currency: "INR", amount_at_risk: 32000000, payment_id: { String: "pay_3", Valid: true }, created_at: d.toISOString(), recovery_action_type: "WHATSAPP", customer_name: { String: "Global Retail", Valid: true }, customer_email: { String: "finance@retail.com", Valid: true }, customer_tier: { String: "ENTERPRISE", Valid: true }, amount_recovered: { Int64: 32000000, Valid: true }, recovery_channel: "send_whatsapp", recovered_at: { Time: d.toISOString(), Valid: true }, subscription_id: "sub_3", discount_percentage: 10 },
+        { id: "4", currency: "INR", amount_at_risk: 1200000, payment_id: { String: "pay_4", Valid: true }, created_at: d.toISOString(), recovery_action_type: "SMS", customer_name: { String: "Acme Startup", Valid: true }, customer_email: { String: "founders@acme.io", Valid: true }, customer_tier: { String: "STARTER", Valid: true }, amount_recovered: { Int64: 1200000, Valid: true }, recovery_channel: "send_sms", recovered_at: { Time: d.toISOString(), Valid: true }, subscription_id: "sub_4", discount_percentage: 0 },
       ]
     };
   }, []);
@@ -361,6 +361,7 @@ export const Overview = () => {
                   <th className="px-6 py-4 font-medium">Customer</th>
                   <th className="px-6 py-4 font-medium">Tier</th>
                   <th className="px-6 py-4 font-medium">Amount</th>
+                  <th className="px-6 py-4 font-medium">Discount</th>
                   <th className="px-6 py-4 font-medium">Channel</th>
                   <th className="px-6 py-4 font-medium">Recovered Date</th>
                 </tr>
@@ -372,6 +373,7 @@ export const Overview = () => {
                       <td className="px-6 py-4"><Skeleton className="h-4 w-32" style={{ backgroundColor: colors.divider }} /></td>
                       <td className="px-6 py-4"><Skeleton className="h-4 w-16" style={{ backgroundColor: colors.divider }} /></td>
                       <td className="px-6 py-4"><Skeleton className="h-4 w-24" style={{ backgroundColor: colors.divider }} /></td>
+                      <td className="px-6 py-4"><Skeleton className="h-4 w-16" style={{ backgroundColor: colors.divider }} /></td>
                       <td className="px-6 py-4"><Skeleton className="h-4 w-24" style={{ backgroundColor: colors.divider }} /></td>
                       <td className="px-6 py-4"><Skeleton className="h-4 w-24" style={{ backgroundColor: colors.divider }} /></td>
                     </tr>
@@ -380,17 +382,26 @@ export const Overview = () => {
                   recovered.map((r, i) => (
                     <tr key={i} className="border-b last:border-0 transition-colors" style={{ borderColor: colors.divider }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.hover} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
                       <td className="px-6 py-3.5">
-                        <div className="font-medium" style={{ color: colors.textMain }}>{r.customer_name?.String || 'Unknown'}</div>
-                        <div className="text-[12px] mt-0.5" style={{ color: colors.textSecondary }}>{r.customer_email?.String || r.subscription_id}</div>
+                        <div className="font-medium" style={{ color: colors.textMain }}>{r.customer_name?.Valid ? r.customer_name.String : 'Unknown'}</div>
+                        <div className="text-[12px] mt-0.5" style={{ color: colors.textSecondary }}>{r.customer_email?.Valid ? r.customer_email.String : r.subscription_id}</div>
                       </td>
                       <td className="px-6 py-3.5">
                         <span style={{ color: colors.textSecondary }}>{r.customer_tier?.Valid ? r.customer_tier.String : '-'}</span>
                       </td>
                       <td className="px-6 py-3.5 font-semibold" style={{ color: colors.kpi.recovered }}>
-                        {new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format((r.amount_recovered?.Int64 || 0) / 100)}
+                        {new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format((r.amount_recovered?.Int64 || r.amount_at_risk || 0) / 100)}
+                      </td>
+                      <td className="px-6 py-3.5">
+                        {r.discount_percentage > 0 ? (
+                          <span className="px-2 py-1 rounded-md text-[12px] font-medium" style={{ backgroundColor: `${colors.kpi.atRisk}20`, color: colors.kpi.atRisk }}>
+                            {r.discount_percentage}% OFF
+                          </span>
+                        ) : (
+                          <span className="text-[13px]" style={{ color: colors.textSecondary }}>None</span>
+                        )}
                       </td>
                       <td className="px-6 py-3.5 capitalize text-[13px]" style={{ color: colors.textSecondary }}>
-                        {r.recovery_channel?.Valid ? r.recovery_channel.String.replace('send_', '') : 'Manual'}
+                        {r.recovery_channel ? r.recovery_channel.replace('send_', '') : 'Manual'}
                       </td>
                       <td className="px-6 py-3.5 text-[13px]" style={{ color: colors.textAxisTable }}>
                         {r.recovered_at?.Valid ? new Date(r.recovered_at.Time).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : new Date(r.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
@@ -399,7 +410,7 @@ export const Overview = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={5} className="px-6 py-12 text-center" style={{ color: colors.textSecondary }}>
+                    <td colSpan={6} className="px-6 py-12 text-center" style={{ color: colors.textSecondary }}>
                       <ShieldAlert className="w-8 h-8 mx-auto mb-3 opacity-30" />
                       No recent recoveries to display.
                     </td>
