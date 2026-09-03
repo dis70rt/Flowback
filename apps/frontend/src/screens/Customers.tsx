@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useCases, useCaseDetails, useCustomer, useCustomers, useCustomerPayments, useCustomerCommunications } from '../hooks/useApi';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Search, User, Mail, Phone, MapPin, CreditCard, MessageSquare, Clock, ShieldCheck, AlertCircle, Users } from 'lucide-react';
+import { Search, User, Mail, Phone, MapPin, CreditCard, MessageSquare, Clock, ShieldCheck, } from 'lucide-react';
 
 export const Customers = () => {
   const [searchInput, setSearchInput] = useState('');
@@ -27,13 +27,7 @@ export const Customers = () => {
   const { data: payments, isPending: isLoadingPayments } = useCustomerPayments(activeCustomerId || undefined);
   const { data: communications, isPending: isLoadingComms } = useCustomerCommunications(activeCustomerId || undefined);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchInput.trim().length > 10) {
-      setActiveCustomerId(searchInput.trim());
-    }
-  };
-
+  
   const filteredCustomers = customersList?.filter(c => 
     c.name?.String?.toLowerCase().includes(searchInput.toLowerCase()) || 
     c.email?.String?.toLowerCase().includes(searchInput.toLowerCase())

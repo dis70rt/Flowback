@@ -1,8 +1,9 @@
-import { useMetricsOverview, useMetricsTrends, useMetricsChannels, useMetricsPipeline, useMetricsRecovered } from '../hooks/useApi';
+import { useState, useMemo } from 'react';
+import { useMetricsOverview, useMetricsTrends, useMetricsChannels, useMetricsRecovered } from '../hooks/useApi';
 import { ResponsiveLine } from '@nivo/line';
 import { ResponsivePie } from '@nivo/pie';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Activity, AlertTriangle, TrendingUp, CheckCircle, ShieldAlert, ChevronDown } from 'lucide-react';
+import { Activity, ToggleLeft, ToggleRight, AlertTriangle, TrendingUp, CheckCircle, ShieldAlert, ChevronDown } from 'lucide-react';
 
 const colors = {
   bg: '#171B2A',
@@ -92,10 +93,57 @@ const CenteredMetric = ({ dataWithArc, centerX, centerY }: any) => {
 };
 
 export const Overview = () => {
-  const { data: metrics, isPending: loadingMetrics } = useMetricsOverview();
-  const { data: trends, isPending: loadingTrends } = useMetricsTrends();
-  const { data: channels, isPending: loadingChannels } = useMetricsChannels();
-  const { data: recovered, isPending: loadingRecovered } = useMetricsRecovered();
+  const [isDemo, setIsDemo] = useState(false);
+
+  const { data: realMetrics, isPending: loadingRealMetrics } = useMetricsOverview();
+  const { data: realTrends, isPending: loadingRealTrends } = useMetricsTrends();
+  const { data: realChannels, isPending: loadingRealChannels } = useMetricsChannels();
+  const { data: realRecovered, isPending: loadingRealRecovered } = useMetricsRecovered();
+
+  const demoData = useMemo(() => {
+    const d = new Date();
+    return {
+      metrics: {
+        total_amount_at_risk: 428000000,
+        total_amount_recovered: 215000000,
+        active_cases: 124,
+        recovered_cases: 89,
+        ai_success_rate: 78
+      },
+      trends: Array.from({ length: 30 }).map((_, i) => {
+        const date = new Date(d);
+        date.setDate(date.getDate() - (29 - i));
+        return {
+          date: date.toISOString(),
+          daily_failed: Math.floor(Math.random() * 5000000) + 1000000,
+          daily_recovered: Math.floor(Math.random() * 4000000) + 500000,
+        };
+      }),
+      channels: [
+        { channel: { String: "send_email", Valid: true }, count: 1284 },
+        { channel: { String: "send_sms", Valid: true }, count: 733 },
+        { channel: { String: "send_call", Valid: true }, count: 580 },
+        { channel: { String: "send_whatsapp", Valid: true }, count: 458 }
+      ],
+      recovered: [
+        { id: "1", currency: "INR", amount_at_risk: 15000000, payment_id: { String: "pay_1", Valid: true }, created_at: d.toISOString(), recovery_action_type: { String: "WHATSAPP", Valid: true }, customer_name: { String: "TechCorp Inc", Valid: true }, customer_email: { String: "billing@techcorp.com", Valid: true }, customer_tier: { String: "ENTERPRISE", Valid: true }, amount_recovered: { Int64: 15000000, Valid: true }, recovery_channel: { String: "send_call", Valid: true }, recovered_at: { Time: d.toISOString(), Valid: true }, subscription_id: "sub_1" },
+        { id: "2", currency: "INR", amount_at_risk: 4500000, payment_id: { String: "pay_2", Valid: true }, created_at: d.toISOString(), recovery_action_type: { String: "WHATSAPP", Valid: true }, customer_name: { String: "Design Studio", Valid: true }, customer_email: { String: "hello@design.co", Valid: true }, customer_tier: { String: "GROWTH", Valid: true }, amount_recovered: { Int64: 4500000, Valid: true }, recovery_channel: { String: "send_email", Valid: true }, recovered_at: { Time: d.toISOString(), Valid: true }, subscription_id: "sub_2" },
+        { id: "3", currency: "INR", amount_at_risk: 32000000, payment_id: { String: "pay_3", Valid: true }, created_at: d.toISOString(), recovery_action_type: { String: "WHATSAPP", Valid: true }, customer_name: { String: "Global Retail", Valid: true }, customer_email: { String: "finance@retail.com", Valid: true }, customer_tier: { String: "ENTERPRISE", Valid: true }, amount_recovered: { Int64: 32000000, Valid: true }, recovery_channel: { String: "send_whatsapp", Valid: true }, recovered_at: { Time: d.toISOString(), Valid: true }, subscription_id: "sub_3" },
+        { id: "4", currency: "INR", amount_at_risk: 1200000, payment_id: { String: "pay_4", Valid: true }, created_at: d.toISOString(), recovery_action_type: { String: "WHATSAPP", Valid: true }, customer_name: { String: "Acme Startup", Valid: true }, customer_email: { String: "founders@acme.io", Valid: true }, customer_tier: { String: "STARTER", Valid: true }, amount_recovered: { Int64: 1200000, Valid: true }, recovery_channel: { String: "send_sms", Valid: true }, recovered_at: { Time: d.toISOString(), Valid: true }, subscription_id: "sub_4" },
+      ]
+    };
+  }, []);
+
+  const metrics = isDemo ? demoData.metrics : realMetrics;
+  const trends = isDemo ? demoData.trends : realTrends;
+  const channels = isDemo ? demoData.channels : realChannels;
+  const recovered = isDemo ? demoData.recovered : realRecovered;
+  
+  const loadingMetrics = isDemo ? false : loadingRealMetrics;
+  const loadingTrends = isDemo ? false : loadingRealTrends;
+  const loadingChannels = isDemo ? false : loadingRealChannels;
+  const loadingRecovered = isDemo ? false : loadingRealRecovered;
+
 
   const trendData = [
     {
@@ -133,12 +181,31 @@ export const Overview = () => {
     };
   });
 
+  
+  const xTickValues = trendData[0]?.data
+    ?.filter((_, i, arr) => i % Math.ceil(arr.length / 6) === 0 || i === arr.length - 1)
+    .map(d => d.x) || [];
+
   return (
     <div className="flex h-full w-full flex-col overflow-y-auto" style={{ backgroundColor: colors.bg }}>
       <div className="px-8 pt-8 pb-6 border-b shrink-0 z-10" style={{ borderColor: colors.cardBorder, backgroundColor: colors.bg }}>
-        <div>
-          <h1 className="text-[28px] font-bold tracking-tight" style={{ color: colors.textMain }}>Overview Analytics</h1>
-          <p className="text-sm mt-1" style={{ color: colors.textSecondary }}>Business metrics, recovery performance, and AI intelligence.</p>
+        <div className="flex items-center justify-between w-full">
+          <div>
+            <h1 className="text-[28px] font-bold tracking-tight" style={{ color: colors.textMain }}>Overview Analytics</h1>
+            <p className="text-sm mt-1" style={{ color: colors.textSecondary }}>Business metrics, recovery performance, and AI intelligence.</p>
+          </div>
+          <button 
+            onClick={() => setIsDemo(!isDemo)}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors"
+            style={{ 
+              backgroundColor: isDemo ? 'rgba(158, 206, 106, 0.1)' : 'transparent',
+              borderColor: isDemo ? colors.kpi.recovered : colors.cardBorder,
+              color: isDemo ? colors.kpi.recovered : colors.textSecondary
+            }}
+          >
+            {isDemo ? <ToggleRight className="w-5 h-5" /> : <ToggleLeft className="w-5 h-5 opacity-70" />}
+            Demo Mode
+          </button>
         </div>
       </div>
 
@@ -200,7 +267,7 @@ export const Overview = () => {
                     tickSize: 0,
                     tickPadding: 12,
                     tickRotation: 0,
-                    tickValues: 6, // Ask Nivo to show ~6 ticks
+                    tickValues: xTickValues,
                   }}
                   axisLeft={{
                     tickSize: 0,

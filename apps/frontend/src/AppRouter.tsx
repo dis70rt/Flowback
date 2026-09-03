@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { WorkspaceLayout } from './components/layout/WorkspaceLayout';
 import { Workspace } from './screens/Workspace';
 import { Customers } from './screens/Customers';
