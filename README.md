@@ -1,81 +1,154 @@
-# Flowback
+<div align="center">
+  <img src="./images/banner.jpg" alt="Flowback Banner" width="100%">
+</div>
 
-Flowback is an audit microservice that ingests Razorpay webhooks, classifies payment decline events, and broadcasts decisions to downstream services.
+<br/>
 
-## Architecture
+<div align="center">
+  <p>
+    <img src="https://img.shields.io/badge/Go-1.22+-00ADD8?style=flat-square&logo=go" alt="Go" />
+    <img src="https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react" alt="React" />
+    <img src="https://img.shields.io/badge/Razorpay-Integrated-02042B?style=flat-square&logo=razorpay" alt="Razorpay" />
+    <img src="https://img.shields.io/badge/Docker-Ready-2496ED?style=flat-square&logo=docker" alt="Docker" />
+    <img src="https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square" alt="License" />
+  </p>
+</div>
 
-1. **API**: Receives Razorpay webhooks, verifies HMAC signatures, and enqueues the raw payload to a Redis queue via Asynq.
-2. **Worker**: Consumes tasks from Asynq, parses the JSON payload, classifies the decline type (Hard, Soft, Unknown), and broadcasts the decision.
-3. **PubSub**: The worker publishes decisions to Redis PubSub channels (`decline:hard`, `decline:soft`, or `decline:unknown`).
+---
 
-## Prerequisites
+## The Problem: Involuntary Churn
 
-* Go 1.22 or higher
-* Docker and Docker Compose (for Redis and PostgreSQL)
+Between **7-12% of SaaS MRR** enters a failed payment state every billing cycle.
+Most companies rely on static, rules-based dunning (e.g., "retry every 3 days"), which only recovers about ~30% of failures. 
 
-## Setup
+To recover the remaining 70%, you need context:
+- **Soft declines** (insufficient funds, technical errors) need smart, silent retries based on payday alignment.
+- **Hard declines** (expired/blocked cards) require personalized, multi-channel outreach (Email, SMS, WhatsApp, Voice) to get the user to update their payment method.
 
-1. Copy `.env.example` to `.env` in the root directory and configure your variables.
-2. Configure your Cloudflare Tunnel:
-   * Go to the Cloudflare Zero Trust Dashboard -> Networks -> Tunnels.
-   * Create a new tunnel (select Cloudflared) and copy the generated token.
-   * Add this token to your `.env` file:
-     ```env
-     CLOUDFLARE_TUNNEL_TOKEN=your_token_here
-     ```
-   * In the tunnel configuration, click the **Published application routes** tab (do not use Hostname routes).
-   * Click **Add a published application route**.
-   * Set your desired Subdomain and select your Domain. Leave Path empty.
-   * Under Service, set Type to `HTTP` and URL to exactly `host.docker.internal:8080`.
-   * Save the route. *(Note: If you receive a "DNS record already exists" error, either choose a different subdomain or delete the conflicting record from your main Cloudflare DNS settings).*
-3. Start the infrastructure:
-   ```bash
-   docker compose up -d
-   ```
+## The Solution: Flowback
 
-## Running the Services
+**Flowback** is an event-driven, AI-native platform that diagnoses payment failures in real-time, selects the optimal recovery strategy per customer, and drafts hyper-personalized outreach.
 
-The application is split into two separate processes. Run them in separate terminals.
+By marrying **agentic AI reasoning** with **strict deterministic guardrails** (idempotency, RBI compliance, contact-hour limits) and **Human-in-the-Loop (HITL)** reviews, Flowback brings fintech-grade engineering to AI revenue recovery.
 
-### 1. Start the API Server
+---
+
+## UI Glimpse (Human-in-the-Loop)
+
+<details open>
+<summary><b>Click to expand UI Previews</b></summary>
+<br>
+
+### Command Center
+| Overview Dashboard | Workspace & HITL Review |
+|:---:|:---:|
+| <img src="./images/dashboard.png" width="400" alt="Dashboard"> | <img src="./images/workspace.png" width="400" alt="Workspace"> |
+| *Real-time metrics, recovery trends, and AI success attribution.* | *Live webhook events streamed via SSE.* |
+
+### AI Generative Previews (Human-in-the-Loop)
+| Email Draft Preview | WhatsApp Message Preview |
+|:---:|:---:|
+| <img src="./images/email_preview.png" width="400" alt="Email Preview"> | <img src="./images/whatsapp_preview.png" width="400" alt="WhatsApp Preview"> |
+
+| Voice Call (TTS) Preview | SMS Draft Preview |
+|:---:|:---:|
+| <img src="./images/voice_preview.png" width="400" alt="Voice Call Preview"> | <img src="./images/sms_preview.png" width="400" alt="SMS Preview"> |
+
+</details>
+
+---
+
+## System Architecture
+
+Flowback is built for scale, resilience, and auditability.
+
+![System Architecture](./images/system_architecture.jpg)
+
+### Core Pipeline
+1. **Webhook Ingestion**: Razorpay webhooks are verified (HMAC-SHA256) and immediately enqueued via Redis/Asynq to prevent data loss.
+2. **Decline Classification**: Failures are deterministically classified. Soft declines bypass the AI for silent exponential backoff retries. Hard declines are routed to the Agent Harness.
+3. **AI Strategy Harness**: The **Strategy Agent** (powered by LLMs) reads the enriched customer payload (profile, communication history, local news) and decides on the best action, delay, and discount strategy.
+4. **Policy Guardrail**: Before any AI decision is executed, a deterministic guardrail intercepts it to enforce stopping rules (max 4 contacts), retry limits, and Indian Standard Time (IST) 8am-7pm contact windows.
+5. **Generative Execution**: Actions are routed to specialized agents (e.g., the **Voice Agent** generating Hinglish call scripts via Gemini TTS, or the **Copywriter Agent** drafting emails).
+6. **HITL & SSE**: Execution drafts are broadcasted in real-time via Redis Pub/Sub --> SSE to the React dashboard. A human reviews the AI's reasoning, edits if necessary, and clicks **Approve**, instantly generating and sending a Razorpay Payment Link.
+
+---
+
+## Key Features
+
+- **Multi-Agent Orchestration**: Specialized LLM agents (Strategy, Copywriter, Voice) handle distinct parts of the recovery pipeline.
+- **Fintech-Grade Safety**: AI hallucinates; money shouldn't. All agent decisions are routed through strict, deterministic policy engines.
+- **Conversational Voice Recovery**: Integrates with Gemini TTS for automated, localized (Hinglish/English) voice calls to recover high-value accounts.
+- **Event-Driven & Idempotent**: Full asynchronous queueing (Asynq) ensures no double-charges and guarantees exact-once processing.
+- **Real-Time Observability**: See cases move through the state machine live on the dashboard via Server-Sent Events (SSE).
+- **Revenue Attribution**: Accurately measures Agent-Recovered vs. Organically-Recovered revenue.
+
+---
+
+## Tech Stack
+
+### Backend
+- **Language**: Go (Golang) 1.22
+- **Frameworks**: Gin (HTTP API), Google ADK (Agent Orchestration)
+- **Database**: PostgreSQL 16 (SQLC + Goose migrations)
+- **Queues/PubSub**: Redis 7, Asynq
+
+### Frontend
+- **Framework**: React 19, Vite 8, TypeScript
+- **Styling**: Tailwind CSS v4, shadcn/ui
+- **Data & State**: TanStack Query, Server-Sent Events (SSE)
+- **Data Viz**: Nivo Charts
+
+### Infrastructure
+- **Deployment**: Docker, Docker Compose
+- **Tracing**: Jaeger (OpenTelemetry)
+- **Ingress**: Nginx, Cloudflare Tunnels (for webhook delivery)
+
+---
+
+## Quickstart
+
+### Prerequisites
+- Docker + Docker Compose v24+
+- Razorpay Test Account
+- Cloudflare Tunnel Token
+- OpenRouter API Key & Google Gemini API Key
+
+### 1. Clone & Configure
 ```bash
-cd apps/backend
-go run cmd/api/main.go
-```
-The API will listen on `http://localhost:8080`.
+git clone https://github.com/dis70rt/flowback.git
+cd flowback
 
-### 2. Start the Worker
+cp .env.example .env
+# Fill in your Razorpay, Cloudflare, and LLM API keys
+```
+
+### 2. Run the Stack
 ```bash
-cd apps/backend
-go run cmd/worker/main.go
+docker compose up -d --build
 ```
-The worker will connect to Redis and begin polling for tasks.
+*Wait ~10 seconds for the Postgres healthcheck and auto-migrations to complete.*
 
-## Testing End to End
+### 3. Access Services
+| Service | URL | Notes |
+|---|---|---|
+| **Dashboard** | `http://localhost:3000` | React frontend served by Nginx |
+| **API** | `http://localhost:8080` | Go backend (also accessible at `/api`) |
+| **Jaeger** | `http://localhost:16686` | Distributed traces |
 
-You can trigger a real webhook flow by using the provided seeder. The seeder calls the Razorpay API to intentionally fail a transaction, which prompts Razorpay to send a `payment.failed` webhook to your configured webhook URL.
+### 4. Setup Webhooks
+In your Razorpay Dashboard, add a webhook pointing to `https://<your-tunnel-url>/webhooks/razorpay`. Subscribe to:
+- `subscription.pending`, `subscription.halted`
+- `payment.failed`, `payment_link.paid`
 
-1. Ensure your `.env` file contains valid Razorpay API keys:
-   ```env
-   RAZORPAY_KEY_ID=your_key_id
-   RAZORPAY_KEY_SECRET=your_key_secret
-   ```
-2. Ensure both the API and Worker are running.
-3. Run the seeder tool:
-   ```bash
-   cd apps/backend
-   go run cmd/seeder/main.go -task=card
-   ```
-4. Check the Worker terminal. Once Razorpay sends the webhook to your API, the worker will consume the task, classify the decline type (e.g., Soft decline for insufficient funds), and broadcast the decision to the PubSub channel.
+---
 
+## Deep Dives
 
-## Database & Code Generation
-This project uses `sqlc` to generate type-safe database models directly from the SQL migrations. We do not use a manual repository folder or an ORM like GORM.
+- [Backend: Agent pipeline, DB schema, API routes, local dev](./apps/backend/README.md)
+- [Frontend: React structure, SSE, production build](./apps/frontend/README.md)
 
-If you modify the SQL migrations in `migrations/`, or add new queries to `queries/tools.sql`, you must regenerate the Go code by running:
-```bash
-# From the apps/backend directory
-/home/dis70rt/go/bin/sqlc generate
-```
-This will instantly update the structs in `internal/database/db`.
-
+---
+<div align="center">
+  <i>Built to win the battle against involuntary churn.</i>
+</div>
